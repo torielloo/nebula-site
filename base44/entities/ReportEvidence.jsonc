@@ -1,0 +1,93 @@
+{
+  "name": "ReportEvidence",
+  "type": "object",
+  "properties": {
+    "report_id": {
+      "type": "string"
+    },
+    "uploader_user_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "image",
+        "video",
+        "file",
+        "link"
+      ]
+    },
+    "url": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "report_id",
+    "uploader_user_id",
+    "type",
+    "url"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.uploader_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.uploader_user_id": "{{user.id}}"
+    },
+    "update": false,
+    "delete": {
+      "$or": [
+        {
+          "data.uploader_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "__tmp_probe2",
+  "type": "object",
+  "properties": {
+    "x": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,79 @@
+{
+  "name": "VerificationEvent",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "from_status": {
+      "type": "string"
+    },
+    "to_status": {
+      "type": "string"
+    },
+    "actor_id": {
+      "type": "string"
+    },
+    "actor_name": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "user_id",
+    "to_status",
+    "actor_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "support"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "create": false,
+    "update": false,
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

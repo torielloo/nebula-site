@@ -1,0 +1,91 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "owner",
+        "dev",
+        "admin",
+        "moderator",
+        "support",
+        "staff",
+        "user"
+      ],
+      "default": "user"
+    },
+    "profile": {
+      "type": "object",
+      "description": "Perfil p\u00fablico e prefer\u00eancias visuais do usu\u00e1rio",
+      "properties": {
+        "discord_id": {
+          "type": "string"
+        },
+        "discord_username": {
+          "type": "string"
+        },
+        "discord_display_name": {
+          "type": "string"
+        },
+        "discord_handle": {
+          "type": "string"
+        },
+        "discord_avatar_url": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "bio": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "online",
+            "away",
+            "dnd",
+            "offline",
+            "invisible"
+          ]
+        },
+        "badges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avatar_url": {
+          "type": "string"
+        },
+        "banner_url": {
+          "type": "string"
+        },
+        "frame": {
+          "type": "string"
+        },
+        "accent": {
+          "type": "string"
+        },
+        "background_url": {
+          "type": "string"
+        },
+        "public_stats": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

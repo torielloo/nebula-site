@@ -1,0 +1,416 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 12% 96%;
+    --foreground: 24 12% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 12% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 0 0% 91%;
+    --accent-foreground: 0 0% 12%;
+    --destructive: 0 0% 18%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 84%;
+    --input: 0 0% 80%;
+    --ring: 0 0% 12%;
+    --chart-1: 0 0% 25%;
+    --chart-2: 189 94% 53%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 152 76% 42%;
+    --chart-5: 38 92% 55%;
+    --radius: 0.6rem;
+    --font-heading: 'Sora', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 5% 14%;
+    --sidebar-ring: 0 0% 96%;
+  }
+
+  .dark {
+    --background: 0 0% 2%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 7%;
+    --secondary-foreground: 0 0% 94%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 62%;
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 0% 92%;
+    --destructive-foreground: 0 0% 5%;
+    --border: 0 0% 13%;
+    --input: 0 0% 16%;
+    --ring: 0 0% 92%;
+    --chart-1: 0 0% 88%;
+    --chart-2: 189 94% 53%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 152 76% 42%;
+    --chart-5: 38 92% 55%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 5% 14%;
+    --sidebar-ring: 0 0% 96%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    background-image: radial-gradient(circle at 50% -20%, hsl(var(--primary) / 0.035), transparent 34rem);
+    background-repeat: no-repeat;
+  }
+
+  button,
+  nav,
+  a,
+  [role='button'],
+  .select-none-touch {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  p,
+  article,
+  .message-content,
+  textarea,
+  input {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
+
+  /* Microinterações leves: preservam feedback visual sem forçar animações
+     contínuas nem disputar com os componentes que controlam seu próprio motion. */
+  svg:not(.animate-spin) {
+    transition: color 180ms ease, opacity 180ms ease, transform 180ms ease;
+  }
+  button,
+  a,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Nébula Music: pulso curto sincronizado com os transientes da música.
+     Alternamos A/B para reiniciar a animação em cada batida detectada. */
+  @keyframes nebula-music-beat-a {
+    0% { scale: 1; filter: brightness(1); }
+    18% { scale: var(--nebula-music-beat-scale, 1.008); filter: brightness(var(--nebula-music-beat-brightness, 1.02)); }
+    100% { scale: 1; filter: brightness(1); }
+  }
+  @keyframes nebula-music-beat-b {
+    0% { scale: 1; filter: brightness(1); }
+    18% { scale: var(--nebula-music-beat-scale, 1.008); filter: brightness(var(--nebula-music-beat-brightness, 1.02)); }
+    100% { scale: 1; filter: brightness(1); }
+  }
+
+  html[data-nebula-music-motion='1'][data-nebula-music-beat='a'][data-nebula-beat-buttons='1'] :where(button, [role='button']):not(a):not([data-no-beat]),
+  html[data-nebula-music-motion='1'][data-nebula-music-beat='a'][data-nebula-beat-links='1'] a:not([data-no-beat]),
+  html[data-nebula-music-motion='1'][data-nebula-music-beat='a'][data-nebula-beat-inputs='1'] :where(input[type='button'], input[type='submit']):not([data-no-beat]) {
+    animation: nebula-music-beat-a 120ms cubic-bezier(.12,.82,.24,1) both;
+    will-change: scale, filter;
+  }
+  html[data-nebula-music-motion='1'][data-nebula-music-beat='b'][data-nebula-beat-buttons='1'] :where(button, [role='button']):not(a):not([data-no-beat]),
+  html[data-nebula-music-motion='1'][data-nebula-music-beat='b'][data-nebula-beat-links='1'] a:not([data-no-beat]),
+  html[data-nebula-music-motion='1'][data-nebula-music-beat='b'][data-nebula-beat-inputs='1'] :where(input[type='button'], input[type='submit']):not([data-no-beat]) {
+    animation: nebula-music-beat-b 120ms cubic-bezier(.12,.82,.24,1) both;
+    will-change: scale, filter;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+    html[data-nebula-music-motion='1'][data-nebula-music-beat][data-nebula-beat-buttons='1'] :where(button, [role='button']):not(a):not([data-no-beat]),
+    html[data-nebula-music-motion='1'][data-nebula-music-beat][data-nebula-beat-links='1'] a:not([data-no-beat]),
+    html[data-nebula-music-motion='1'][data-nebula-music-beat][data-nebula-beat-inputs='1'] :where(input[type='button'], input[type='submit']):not([data-no-beat]) {
+      animation-duration: 120ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
+
+@layer utilities {
+  .nebula-glow {
+    box-shadow: 0 12px 28px -18px hsl(var(--ring) / 0.45);
+  }
+  .nebula-glow-sm {
+    box-shadow: 0 8px 20px -16px hsl(var(--ring) / 0.5);
+  }
+  .text-glow {
+    text-shadow: none;
+  }
+  .scrollbar-thin {
+    overscroll-behavior: contain;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 22%);
+    border-radius: 999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ui-editing [data-ui-key] {
+    cursor: pointer;
+  }
+  .ui-editing [data-ui-key]:hover {
+    outline: 2px dashed hsl(var(--primary) / 0.85);
+    outline-offset: 2px;
+  }
+  .ui-editing [data-ui-key][data-ui-selected] {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+  .safe-area-top {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.375rem);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+}
+
+@media (max-width: 640px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    touch-action: pan-y;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 1rem) !important;
+  }
+
+  .recharts-wrapper,
+  .recharts-surface {
+    max-width: 100% !important;
+  }
+
+  table {
+    min-width: max-content;
+  }
+}
+/* Tela cheia no contêiner estável: evita recriar o vídeo e reduz piscadas. */
+.call-media-tile:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  aspect-ratio: auto;
+  background: #000;
+  border: 0;
+  border-radius: 0;
+}
+.call-media-tile:fullscreen .call-media-video {
+  object-fit: contain;
+}
+
+/* Fullscreen da call: usa uma camada opaca e isolada. Isso evita artefatos de
+   composição ao alternar fullscreen enquanto WebRTC está ativo. */
+.call-room-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  overflow: auto;
+  isolation: isolate;
+  contain: paint;
+  background: #050505;
+  color-scheme: dark;
+}
+.call-room-shell:fullscreen [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Gamer RGB — visual limpo e previsível. O tema NÃO altera o accent salvo.
+   Ele colore apenas elementos explicitamente destacados e nunca áreas protegidas. */
+@property --nebula-rgb-hue {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@keyframes nebula-rgb-cycle {
+  from { --nebula-rgb-hue: 0; }
+  to { --nebula-rgb-hue: 360; }
+}
+
+@keyframes nebula-rgb-sweep-ltr {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.ui-theme-gamer-rgb {
+  --nebula-rgb-hue: 0;
+  animation: nebula-rgb-cycle 5.5s linear infinite;
+}
+
+/* Gamer RGB suave: só destaques grandes e navegação. Não pinta texto comum,
+   botões de ação, cards, campos ou componentes funcionais. */
+.ui-theme-gamer-rgb :where(
+  h1, h2,
+  .font-display,
+  [data-ui-key^="nav."]
+):not([data-rgb-static]) {
+  background-image: linear-gradient(
+    90deg,
+    #ff3347 0%,
+    #ff8a24 14%,
+    #ffe347 28%,
+    #42f56c 42%,
+    #29d8ff 56%,
+    #4f6bff 70%,
+    #a855f7 84%,
+    #ff3fc7 100%
+  );
+  background-size: 280% 100%;
+  background-position: 100% 50%;
+  background-repeat: repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  animation: nebula-rgb-sweep-ltr 5.5s linear infinite;
+  text-shadow: none;
+}
+
+.ui-theme-gamer-rgb :where(.text-primary):not(button):not(a):not([data-rgb-static]) {
+  background-image: linear-gradient(
+    90deg,
+    #ff3347 0%,
+    #ff8a24 14%,
+    #ffe347 28%,
+    #42f56c 42%,
+    #29d8ff 56%,
+    #4f6bff 70%,
+    #a855f7 84%,
+    #ff3fc7 100%
+  );
+  background-size: 280% 100%;
+  background-position: 100% 50%;
+  background-repeat: repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  animation: nebula-rgb-sweep-ltr 5.5s linear infinite;
+  text-shadow: none;
+}
+
+.ui-theme-gamer-rgb :where([data-ui-key^="nav."] svg, h1 svg, h2 svg, .font-display svg):not(.animate-spin):not([data-rgb-static]) {
+  color: hsl(calc(var(--nebula-rgb-hue) + 42) 94% 68%) !important;
+  filter: drop-shadow(0 0 3px hsl(var(--nebula-rgb-hue) 100% 60% / 0.10));
+}
+
+.ui-theme-gamer-rgb :where(
+  p, span, small, strong, em, b, i, label, li, th, td,
+  button, input, textarea, select, option, [contenteditable="true"],
+  .text-foreground, .text-muted-foreground, .text-primary-foreground,
+  [data-rgb-static], [data-rgb-static] *
+) {
+  text-shadow: none !important;
+}
+
+/* Loja Nébula: isolamento total do tema RGB para preservar contraste branco/preto. */
+.ui-theme-gamer-rgb [data-store-card] {
+  color: hsl(var(--foreground)) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background-image: none !important;
+  animation: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+.ui-theme-gamer-rgb [data-store-card] * {
+  -webkit-text-fill-color: currentColor !important;
+  background-image: none !important;
+  animation: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+.ui-theme-gamer-rgb [data-store-card] .text-foreground {
+  color: hsl(var(--foreground)) !important;
+}
+.ui-theme-gamer-rgb [data-store-card] .text-muted-foreground {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.ui-theme-gamer-rgb [data-store-card] .text-primary-foreground {
+  color: hsl(var(--primary-foreground)) !important;
+}
+.ui-theme-gamer-rgb [data-store-card] svg {
+  color: currentColor !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-theme-gamer-rgb {
+    animation: none !important;
+    --nebula-rgb-hue: 285;
+  }
+  .ui-theme-gamer-rgb :where(h1, h2, .font-display, [data-ui-key^="nav."], .text-primary):not([data-rgb-static]) {
+    animation: none !important;
+    background-position: 50% 50%;
+  }
+}

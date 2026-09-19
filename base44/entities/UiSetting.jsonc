@@ -1,0 +1,27 @@
+{
+  "name": "UiSetting",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "description": "Configura\u00e7\u00e3o do N\u00e9bula Nitro UI Studio do usu\u00e1rio (elementos, fundos, sons)"
+    }
+  },
+  "required": [
+    "data"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

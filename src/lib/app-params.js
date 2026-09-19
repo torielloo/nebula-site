@@ -1,0 +1,30 @@
+import { getAccessToken } from '@base44/sdk';
+
+const isNode = typeof window === 'undefined';
+
+const isClearAccessTokenRequested = () =>
+	!isNode && new URLSearchParams(window.location.search).get("clear_access_token") === 'true';
+
+const clearStoredAccessToken = () => {
+	window.localStorage.removeItem('base44_access_token');
+	window.localStorage.removeItem('token');
+}
+
+const getAppParams = () => {
+	if (isClearAccessTokenRequested()) {
+		clearStoredAccessToken();
+	}
+	return {
+		appId: import.meta.env.VITE_BASE44_APP_ID,
+		token: getAccessToken(),
+		functionsVersion: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION,
+		// O OAuth é atendido pelo Base44. Use app.base44.com como fallback;
+		// base44.app/login pode responder App not found em fluxos de usuário novo.
+		appBaseUrl: import.meta.env.VITE_BASE44_APP_BASE_URL || 'https://app.base44.com',
+	}
+}
+
+
+export const appParams = {
+	...getAppParams()
+}

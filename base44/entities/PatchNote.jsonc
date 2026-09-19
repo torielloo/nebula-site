@@ -1,0 +1,91 @@
+{
+  "name": "PatchNote",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "N\u00famero da vers\u00e3o (ex: 81)"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo da atualiza\u00e7\u00e3o"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas da atualiza\u00e7\u00e3o (novos recursos, corre\u00e7\u00f5es)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "default": "draft",
+      "description": "Rascunho ou publicada para os usu\u00e1rios"
+    }
+  },
+  "required": [
+    "version",
+    "title"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
+}

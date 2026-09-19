@@ -1,0 +1,110 @@
+{
+  "name": "CoreOsNotification",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "notice",
+        "warning",
+        "critical"
+      ],
+      "default": "notice"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "security",
+        "moderation",
+        "support",
+        "system"
+      ],
+      "default": "system"
+    },
+    "audience_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dedupe_key": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "action_url": {
+      "type": "string"
+    },
+    "read_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dismissed_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "title",
+    "body",
+    "severity",
+    "category",
+    "audience_ids"
+  ],
+  "rls": {
+    "read": {
+      "data.audience_ids": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "update": {
+      "data.audience_ids": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

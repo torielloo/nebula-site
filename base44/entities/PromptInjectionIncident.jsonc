@@ -1,0 +1,155 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "authenticated_role": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "prompt_injection",
+        "secret_extraction",
+        "system_prompt_extraction",
+        "cross_project_probe",
+        "role_impersonation",
+        "nonsense_abuse",
+        "other"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 1
+    },
+    "risk_score": {
+      "type": "number",
+      "default": 0
+    },
+    "sanitized_excerpt": {
+      "type": "string"
+    },
+    "detected_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "takeover_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "recommended_action": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "ignored",
+        "actioned"
+      ],
+      "default": "pending"
+    },
+    "review_notes": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "incident_id",
+    "conversation_id",
+    "category",
+    "severity",
+    "attempt_count",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  },
+  "name": "PromptInjectionIncident"
+}

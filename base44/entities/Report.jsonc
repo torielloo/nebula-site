@@ -1,0 +1,226 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "post",
+        "comment",
+        "user",
+        "message",
+        "ticket",
+        "other"
+      ],
+      "default": "post",
+      "description": "Tipo de conte\u00fado denunciado"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "ID do conte\u00fado denunciado"
+    },
+    "target_content": {
+      "type": "string",
+      "description": "Trecho do conte\u00fado denunciado (snapshot)"
+    },
+    "target_author": {
+      "type": "string",
+      "description": "Autor do conte\u00fado denunciado"
+    },
+    "reporter_user_id": {
+      "type": "string",
+      "description": "ID interno do denunciante"
+    },
+    "reported_user_id": {
+      "type": "string",
+      "description": "ID interno do usu\u00e1rio denunciado"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada da den\u00fancia"
+    },
+    "context": {
+      "type": "string",
+      "description": "Contexto onde ocorreu"
+    },
+    "content_url": {
+      "type": "string",
+      "description": "Refer\u00eancia segura para o conte\u00fado"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "default": "normal"
+    },
+    "assigned_to": {
+      "type": "string"
+    },
+    "resolution": {
+      "type": "string"
+    },
+    "unique_reporter_key": {
+      "type": "string"
+    },
+    "risk_flag": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Motivo da den\u00fancia"
+    },
+    "reporter_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "new",
+        "in_review",
+        "awaiting_info",
+        "confirmed",
+        "approved",
+        "rejected",
+        "resolved"
+      ],
+      "default": "pending"
+    },
+    "handled_by": {
+      "type": "string",
+      "description": "Staff que analisou a den\u00fancia"
+    },
+    "action_taken": {
+      "type": "string",
+      "description": "A\u00e7\u00e3o aplicada ao conte\u00fado"
+    },
+    "attachments": {
+      "type": "array",
+      "description": "Evid\u00eancias anexadas \u00e0 den\u00fancia (imagem/v\u00eddeo)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "type",
+          "url"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "target_id",
+    "reason"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "support"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
+}

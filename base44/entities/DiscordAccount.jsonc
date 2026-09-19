@@ -1,0 +1,59 @@
+{
+  "name": "DiscordAccount",
+  "type": "object",
+  "properties": {
+    "discord_id": {
+      "type": "string",
+      "description": "ID da conta do Discord"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID da conta Google autenticada no Base44"
+    },
+    "handle": {
+      "type": "string",
+      "description": "Arroba oficial do Discord"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Nome principal do Discord"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email da conta N\u00e9bula vinculada ao Discord"
+    },
+    "password": {
+      "type": "string",
+      "description": "Credencial interna usada pelo login com Discord (nunca exibida)"
+    },
+    "username": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio no Discord"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Avatar do usu\u00e1rio no Discord"
+    }
+  },
+  "required": [
+    "discord_id"
+  ],
+  "rls": {
+    "read": false,
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "name": "SecurityEvent",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "category": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "observed",
+        "blocked"
+      ]
+    },
+    "route": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "string"
+    },
+    "ip_hash": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "request_fingerprint": {
+      "type": "string"
+    },
+    "payload_hash": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "integrity_hash": {
+      "type": "string"
+    },
+    "reviewed": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "risk_score": {
+      "type": "number"
+    },
+    "ai_summary": {
+      "type": "string"
+    },
+    "ai_recommendation": {
+      "type": "string"
+    },
+    "owner_decision": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "blocked",
+        "banned",
+        "ignored"
+      ],
+      "default": "pending"
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "event_id",
+    "occurred_at",
+    "severity",
+    "category",
+    "action",
+    "route",
+    "reason",
+    "integrity_hash"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}
