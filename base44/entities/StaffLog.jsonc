@@ -1,0 +1,132 @@
+{
+  "name": "StaffLog",
+  "type": "object",
+  "properties": {
+    "actor_name": {
+      "type": "string",
+      "description": "Nome do membro da staff que executou a a\u00e7\u00e3o"
+    },
+    "actor_id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "description": "A\u00e7\u00e3o executada (ex: status_ticket, denuncia_aprovada)"
+    },
+    "details": {
+      "type": "string",
+      "description": "Detalhe da a\u00e7\u00e3o executada"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "ID do registro afetado (ticket, den\u00fancia, conte\u00fado)"
+    }
+  },
+  "required": [
+    "actor_name",
+    "action"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "support"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
+}

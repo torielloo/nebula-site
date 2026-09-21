@@ -1,0 +1,169 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "owner",
+        "dev",
+        "admin",
+        "moderator",
+        "support",
+        "staff",
+        "user"
+      ],
+      "default": "user"
+    },
+    "profile": {
+      "type": "object",
+      "description": "Perfil p\u00fablico e prefer\u00eancias visuais do usu\u00e1rio",
+      "properties": {
+        "discord_id": {
+          "type": "string"
+        },
+        "discord_username": {
+          "type": "string"
+        },
+        "discord_display_name": {
+          "type": "string"
+        },
+        "discord_handle": {
+          "type": "string"
+        },
+        "discord_avatar_url": {
+          "type": "string"
+        },
+        "discord_banner_url": {
+          "type": "string"
+        },
+        "discord_accent": {
+          "type": "string"
+        },
+        "discord_accent_color": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "bio": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "online",
+            "away",
+            "dnd",
+            "offline",
+            "invisible"
+          ]
+        },
+        "badges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avatar_url": {
+          "type": "string"
+        },
+        "banner_url": {
+          "type": "string"
+        },
+        "frame": {
+          "type": "string"
+        },
+        "custom_frame_url": {
+          "type": "string"
+        },
+        "name_gradient_a": {
+          "type": "string"
+        },
+        "name_gradient_b": {
+          "type": "string"
+        },
+        "cursor_effect": {
+          "type": "string",
+          "enum": [
+            "none",
+            "spark",
+            "nebula",
+            "prism"
+          ],
+          "default": "none"
+        },
+        "nitro_pronouns": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "nitro_status_text": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "nitro_about": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "accent": {
+          "type": "string"
+        },
+        "accent_2": {
+          "type": "string"
+        },
+        "accent_source": {
+          "type": "string"
+        },
+        "custom_tag": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "nebula",
+            "nebula_nitro"
+          ],
+          "default": "nebula"
+        },
+        "sounds": {
+          "type": "object",
+          "properties": {
+            "notify": {
+              "type": "boolean",
+              "default": true
+            },
+            "call": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "background_url": {
+          "type": "string"
+        },
+        "public_stats": {
+          "type": "boolean",
+          "default": true
+        },
+        "nitro_reset_pending": {
+          "type": "boolean",
+          "default": false
+        },
+        "nitro_reset_at": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

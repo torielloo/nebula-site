@@ -1,0 +1,92 @@
+{
+  "name": "PrivateCallInvite",
+  "type": "object",
+  "properties": {
+    "caller_id": {
+      "type": "string"
+    },
+    "caller_name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "caller_avatar": {
+      "type": "string",
+      "maxLength": 2048
+    },
+    "callee_id": {
+      "type": "string"
+    },
+    "callee_name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "channel_code": {
+      "type": "string",
+      "maxLength": 180
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ringing",
+        "accepted",
+        "declined",
+        "cancelled",
+        "expired"
+      ],
+      "default": "ringing"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "responded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "caller_id",
+    "callee_id",
+    "conversation_id",
+    "channel_code",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.caller_id": "{{user.id}}"
+        },
+        {
+          "data.callee_id": "{{user.id}}"
+        }
+      ]
+    },
+    "create": {
+      "data.caller_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.caller_id": "{{user.id}}"
+        },
+        {
+          "data.callee_id": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.caller_id": "{{user.id}}"
+        },
+        {
+          "data.callee_id": "{{user.id}}"
+        }
+      ]
+    }
+  }
+}

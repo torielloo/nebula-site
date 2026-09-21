@@ -1,0 +1,92 @@
+{
+  "name": "NitroReceiptAudit",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "actor_id": {
+      "type": "string"
+    },
+    "actor_name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "actor_role": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "session_created",
+        "qr_created",
+        "qr_regenerated",
+        "upload_started",
+        "upload_rejected",
+        "upload_received",
+        "approved",
+        "rejected",
+        "qr_expired"
+      ]
+    },
+    "details": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "ip_hash": {
+      "type": "string",
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "request_id",
+    "action",
+    "created_at"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "support"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

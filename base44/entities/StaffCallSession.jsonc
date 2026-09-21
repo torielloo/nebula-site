@@ -1,0 +1,55 @@
+{
+  "name": "StaffCallSession",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "room_code": {
+      "type": "string"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "rotated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "key",
+    "room_code",
+    "active",
+    "expires_at"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

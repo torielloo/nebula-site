@@ -1,0 +1,121 @@
+{
+  "name": "Appeal",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "explanation": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string"
+    },
+    "evidence_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "needs_info",
+        "accepted",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "handled_by": {
+      "type": "string"
+    },
+    "response": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "user_id",
+    "explanation"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "support"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "create": false,
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "support"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "moderator"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "staff"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "name": "MusicTrack",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "artist": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "track_url": {
+      "type": "string",
+      "maxLength": 2048
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "uploaded_by_name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "mime_type": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "duration": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 7200
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_official": {
+      "type": "boolean",
+      "default": false
+    },
+    "sort_order": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 999,
+      "default": 0
+    },
+    "lyrics": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "lyrics_source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "ai_original",
+        "none"
+      ],
+      "default": "none"
+    },
+    "bass_profile": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "realtime"
+          ],
+          "default": "realtime"
+        },
+        "sensitivity": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2,
+          "default": 1
+        },
+        "low_hz": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 120,
+          "default": 32
+        },
+        "high_hz": {
+          "type": "number",
+          "minimum": 100,
+          "maximum": 350,
+          "default": 210
+        }
+      }
+    }
+  },
+  "required": [
+    "title",
+    "track_url",
+    "uploaded_by"
+  ],
+  "rls": {
+    "read": {
+      "data.uploaded_by": "{{user.id}}"
+    },
+    "create": {
+      "data.uploaded_by": "{{user.id}}"
+    },
+    "update": {
+      "data.uploaded_by": "{{user.id}}"
+    },
+    "delete": {
+      "data.uploaded_by": "{{user.id}}"
+    }
+  }
+}

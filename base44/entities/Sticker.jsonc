@@ -1,0 +1,40 @@
+{
+  "name": "Sticker",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da figurinha"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Imagem da figurinha (upload p\u00fablico)"
+    },
+    "author_id": {
+      "type": "string",
+      "description": "ID do criador da figurinha"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Nome do criador da figurinha"
+    }
+  },
+  "required": [
+    "image_url",
+    "author_id"
+  ],
+  "rls": {
+    "read": {
+      "data.author_id": "{{user.id}}"
+    },
+    "create": {
+      "data.author_id": "{{user.id}}"
+    },
+    "update": {
+      "data.author_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.author_id": "{{user.id}}"
+    }
+  }
+}

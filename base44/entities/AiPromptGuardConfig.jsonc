@@ -1,0 +1,70 @@
+{
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "first_warning": {
+      "type": "boolean",
+      "default": true
+    },
+    "takeover_after": {
+      "type": "number",
+      "default": 2
+    },
+    "risk_threshold": {
+      "type": "number",
+      "default": 60
+    },
+    "cooldown_minutes": {
+      "type": "number",
+      "default": 15
+    },
+    "notify_owner": {
+      "type": "boolean",
+      "default": true
+    },
+    "notify_dev": {
+      "type": "boolean",
+      "default": true
+    },
+    "auto_punish": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  },
+  "name": "AiPromptGuardConfig"
+}

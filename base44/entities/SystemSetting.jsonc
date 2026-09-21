@@ -1,0 +1,80 @@
+{
+  "name": "SystemSetting",
+  "type": "object",
+  "properties": {
+    "maintenance_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "Modo manuten\u00e7\u00e3o do sistema"
+    },
+    "maintenance_message": {
+      "type": "string",
+      "description": "Mensagem exibida durante a manuten\u00e7\u00e3o"
+    },
+    "current_version": {
+      "type": "string",
+      "description": "Vers\u00e3o atual do N\u00e9bula OS"
+    }
+  },
+  "rls": {
+    "read": {},
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "dev"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  },
+  "required": []
+}

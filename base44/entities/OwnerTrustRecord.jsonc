@@ -1,0 +1,71 @@
+{
+  "name": "OwnerTrustRecord",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "trusted",
+        "quarantined",
+        "revoked"
+      ],
+      "default": "quarantined"
+    },
+    "granted_by_owner_id": {
+      "type": "string"
+    },
+    "granted_by_owner_name": {
+      "type": "string"
+    },
+    "grant_source": {
+      "type": "string"
+    },
+    "granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "incident_conversation_id": {
+      "type": "string"
+    },
+    "reviewed_by_owner_id": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "status",
+    "grant_source"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

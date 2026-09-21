@@ -1,0 +1,68 @@
+{
+  "name": "UserNotification",
+  "type": "object",
+  "properties": {
+    "recipient_user_id": {
+      "type": "string"
+    },
+    "actor_user_id": {
+      "type": "string"
+    },
+    "actor_name": {
+      "type": "string"
+    },
+    "actor_avatar": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "mention",
+        "verification",
+        "report",
+        "system"
+      ],
+      "default": "system"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "context_url": {
+      "type": "string"
+    },
+    "context_type": {
+      "type": "string"
+    },
+    "context_id": {
+      "type": "string"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    },
+    "dedupe_key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "recipient_user_id",
+    "type",
+    "title",
+    "body"
+  ],
+  "rls": {
+    "read": {
+      "data.recipient_user_id": "{{user.id}}"
+    },
+    "create": false,
+    "update": {
+      "data.recipient_user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.recipient_user_id": "{{user.id}}"
+    }
+  }
+}

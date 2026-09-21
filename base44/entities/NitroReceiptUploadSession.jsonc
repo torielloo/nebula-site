@@ -1,0 +1,87 @@
+{
+  "name": "NitroReceiptUploadSession",
+  "type": "object",
+  "properties": {
+    "token_hash": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "nitro_mensal",
+        "nitro_anual"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "uploading",
+        "processing",
+        "received",
+        "expired",
+        "failed"
+      ],
+      "default": "waiting"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "upload_started_at": {
+      "type": "string"
+    },
+    "upload_finished_at": {
+      "type": "string"
+    },
+    "consumed_at": {
+      "type": "string"
+    },
+    "last_error": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "attempt_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20,
+      "default": 0
+    },
+    "lock_token": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "created_ip_hash": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "upload_ip_hash": {
+      "type": "string",
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "token_hash",
+    "user_id",
+    "request_id",
+    "plan",
+    "status",
+    "created_at",
+    "expires_at"
+  ],
+  "rls": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

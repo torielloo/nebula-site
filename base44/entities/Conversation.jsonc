@@ -1,0 +1,85 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "participant_meta": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          },
+          "frame": {
+            "type": "string"
+          },
+          "custom_frame_url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      }
+    },
+    "last_message": {
+      "type": "string"
+    },
+    "last_sender_id": {
+      "type": "string"
+    },
+    "pair_key": {
+      "type": "string",
+      "description": "Chave can\u00f4nica de conversa direta baseada nos participantes ordenados"
+    }
+  },
+  "required": [
+    "participants",
+    "participant_meta"
+  ],
+  "rls": {
+    "read": {
+      "data.participants": "{{user.id}}"
+    },
+    "create": {
+      "data.participants": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
+    },
+    "update": {
+      "data.participants": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
+    },
+    "delete": {
+      "data.participants": {
+        "$in": [
+          "{{user.id}}"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "name": "CoreOsConfig",
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Core OS ativa ou em manuten\u00e7\u00e3o"
+    },
+    "model": {
+      "type": "string",
+      "enum": [
+        "base44_original"
+      ],
+      "default": "base44_original",
+      "description": "InvokeLLM original da Base44, sem for\u00e7ar um ID de modelo. Usa o roteamento nativo do app e consome cr\u00e9ditos normalmente."
+    },
+    "persona_name": {
+      "type": "string",
+      "default": "Core OS",
+      "description": "Nome da IA exibido e usado na conversa"
+    },
+    "tone": {
+      "type": "string",
+      "description": "Tom de resposta da IA"
+    },
+    "rules": {
+      "type": "string",
+      "description": "Regras e comportamento da IA"
+    },
+    "knowledge": {
+      "type": "string",
+      "description": "Base de conhecimento oficial (guias, solu\u00e7\u00f5es, textos)"
+    },
+    "voice_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativa a voz sintetizada da Core OS"
+    },
+    "voice_model": {
+      "type": "string",
+      "enum": [
+        "browser-speech"
+      ],
+      "default": "browser-speech",
+      "description": "S\u00edntese de voz nativa do navegador, sem modelo externo"
+    },
+    "voice_name": {
+      "type": "string",
+      "enum": [
+        "alloy",
+        "ash",
+        "ballad",
+        "coral",
+        "echo",
+        "fable",
+        "nova",
+        "onyx",
+        "sage",
+        "shimmer",
+        "verse",
+        "marin",
+        "cedar"
+      ],
+      "default": "cedar",
+      "description": "Prefer\u00eancia de voz; o navegador escolhe a voz dispon\u00edvel mais pr\u00f3xima"
+    },
+    "voice_instructions": {
+      "type": "string",
+      "default": "Voz GPT natural, clara e conversacional, com ritmo humano e sem tom rob\u00f3tico.",
+      "description": "Instru\u00e7\u00f5es de estilo para a voz da Core OS"
+    },
+    "voice_auto_speak": {
+      "type": "boolean",
+      "default": true,
+      "description": "Fala automaticamente as respostas da Core OS"
+    },
+    "support_voice_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativa a voz sintetizada da Nebulaticos IA"
+    },
+    "support_voice_model": {
+      "type": "string",
+      "enum": [
+        "browser-speech"
+      ],
+      "default": "browser-speech",
+      "description": "S\u00edntese de voz nativa do navegador, sem modelo externo"
+    },
+    "support_voice_name": {
+      "type": "string",
+      "enum": [
+        "alloy",
+        "ash",
+        "ballad",
+        "coral",
+        "echo",
+        "fable",
+        "nova",
+        "onyx",
+        "sage",
+        "shimmer",
+        "verse",
+        "marin",
+        "cedar"
+      ],
+      "default": "cedar",
+      "description": "Prefer\u00eancia de voz; o navegador escolhe a voz dispon\u00edvel mais pr\u00f3xima"
+    },
+    "support_voice_instructions": {
+      "type": "string",
+      "default": "Voz GPT natural, prestativa, clara e conversacional. Fale no mesmo idioma da resposta, com ritmo humano e sem tom rob\u00f3tico.",
+      "description": "Instru\u00e7\u00f5es de estilo para a voz da Nebulaticos IA"
+    },
+    "support_voice_auto_speak": {
+      "type": "boolean",
+      "default": true,
+      "description": "Fala automaticamente as respostas da Nebulaticos IA"
+    },
+    "server_monitoring": {
+      "type": "boolean",
+      "default": true
+    },
+    "notify_staff": {
+      "type": "boolean",
+      "default": true
+    },
+    "notify_owner": {
+      "type": "boolean",
+      "default": true
+    },
+    "auto_actions": {
+      "type": "boolean",
+      "default": false
+    },
+    "scan_interval_minutes": {
+      "type": "number",
+      "default": 5
+    },
+    "support_persona_name": {
+      "type": "string",
+      "default": "Nebulaticos IA",
+      "description": "Nome/persona do assistente de suporte"
+    },
+    "support_tone": {
+      "type": "string",
+      "default": "r\u00e1pida, humana, prestativa, confiante, clara e direta; sem soar rob\u00f3tica",
+      "description": "Tom de conversa da Nebulaticos IA"
+    },
+    "support_rules": {
+      "type": "string",
+      "default": "Converse como uma IA de suporte de verdade. Responda sauda\u00e7\u00f5es, d\u00favidas gerais e perguntas sobre o site normalmente. Saiba informar Discord oficial, tickets, downloads, vers\u00f5es, solu\u00e7\u00f5es e erros conhecidos usando contexto p\u00fablico. S\u00f3 entre em diagn\u00f3stico t\u00e9cnico quando a mensagem realmente for sobre erro e nunca invente diagn\u00f3stico.",
+      "description": "Regras pr\u00f3prias da Nebulaticos IA"
+    },
+    "owner_persona_name": {
+      "type": "string",
+      "default": "Core OS Owner",
+      "description": "Nome da personalidade da Core OS Owner"
+    },
+    "owner_tone": {
+      "type": "string",
+      "default": "confiante, estrat\u00e9gica, direta, inteligente e contextual",
+      "description": "Tom pr\u00f3prio da Core OS Owner"
+    },
+    "owner_rules": {
+      "type": "string",
+      "default": "Converse normalmente com o Owner, responda d\u00favidas sobre o N\u00e9bula OS e use o conhecimento real do site. S\u00f3 pe\u00e7a ID quando uma a\u00e7\u00e3o realmente exigir um alvo espec\u00edfico. Explique recursos, seguran\u00e7a, tickets, p\u00e1ginas e \u00e1reas do painel quando perguntado. Execute apenas a\u00e7\u00f5es permitidas e validadas pelo backend.",
+      "description": "Regras pr\u00f3prias da Core OS Owner"
+    },
+    "staff_persona_name": {
+      "type": "string",
+      "default": "Core OS Staff",
+      "description": "Nome da personalidade da Core OS Staff"
+    },
+    "staff_tone": {
+      "type": "string",
+      "default": "prestativa, r\u00e1pida, profissional, clara e colaborativa",
+      "description": "Tom pr\u00f3prio da Core OS Staff"
+    },
+    "staff_rules": {
+      "type": "string",
+      "default": "Converse normalmente com a Staff e responda d\u00favidas sobre o N\u00e9bula OS, painel, tickets e recursos do site antes de pedir dados espec\u00edficos. S\u00f3 pe\u00e7a ID quando a solicita\u00e7\u00e3o depender de um item espec\u00edfico. Nunca simule acesso de Owner.",
+      "description": "Regras pr\u00f3prias da Core OS Staff"
+    },
+    "security_persona_name": {
+      "type": "string",
+      "default": "Core OS Seguran\u00e7a",
+      "description": "Nome da personalidade da Core OS Seguran\u00e7a"
+    },
+    "security_tone": {
+      "type": "string",
+      "default": "anal\u00edtica, cautelosa, objetiva, t\u00e9cnica e firme",
+      "description": "Tom pr\u00f3prio da Core OS Seguran\u00e7a"
+    },
+    "security_rules": {
+      "type": "string",
+      "default": "Converse normalmente sobre o N\u00e9bula OS e seguran\u00e7a. Explique Prompt Guard, Core Security AI, relat\u00f3rios, incidentes e caminhos do site usando apenas contexto autorizado. Investigue e contenha riscos somente com permiss\u00f5es pr\u00f3prias de seguran\u00e7a; nunca revele segredos, credenciais ou mecanismos internos sens\u00edveis.",
+      "description": "Regras pr\u00f3prias da Core OS Seguran\u00e7a"
+    },
+    "mixer_persona_name": {
+      "type": "string",
+      "default": "N\u00e9bula Mixer IA",
+      "description": "Nome da IA criativa do Mixer"
+    },
+    "mixer_tone": {
+      "type": "string",
+      "default": "criativa, musical, objetiva e original",
+      "description": "Tom pr\u00f3prio da IA do Mixer"
+    },
+    "mixer_rules": {
+      "type": "string",
+      "default": "Crie conte\u00fado original dentro do Mixer. N\u00e3o acesse dados administrativos ou privados.",
+      "description": "Regras pr\u00f3prias da IA do Mixer"
+    }
+  },
+  "required": [],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

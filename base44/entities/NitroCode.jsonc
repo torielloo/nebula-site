@@ -1,0 +1,100 @@
+{
+  "name": "NitroCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "nitro_mensal",
+        "nitro_anual",
+        "nitro_90",
+        "nitro_custom"
+      ]
+    },
+    "duration_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3650
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "used",
+        "revoked",
+        "expired"
+      ],
+      "default": "available"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "purchase"
+      ],
+      "default": "manual"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "generated_by": {
+      "type": "string"
+    },
+    "generated_by_name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "used_by": {
+      "type": "string"
+    },
+    "used_by_name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "used_at": {
+      "type": "string"
+    },
+    "activation_request_id": {
+      "type": "string"
+    },
+    "dm_sent_at": {
+      "type": "string"
+    },
+    "claim_token": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "assigned_user_id": {
+      "type": "string"
+    },
+    "assigned_user_name": {
+      "type": "string",
+      "maxLength": 120
+    }
+  },
+  "required": [
+    "code",
+    "plan",
+    "duration_days",
+    "status",
+    "source",
+    "generated_by",
+    "generated_at"
+  ],
+  "rls": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "SecurePaymentConfig",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "value": {
+      "type": "string",
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ],
+  "rls": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}
