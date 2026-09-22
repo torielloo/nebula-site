@@ -17,7 +17,6 @@ const ALLOWED_REDIRECT_HOSTS = new Set([
   'nebula-os-core-pingu.bubbly-alder-3685.chatgpt.site',
 ]);
 const REDIRECT_PATH = '/discord-callback';
-const CANONICAL_REDIRECT_URI = 'https://nebula-os-core-pingu.base44.app/discord-callback';
 
 function validRedirect(value, requestOrigin = '') {
   if (typeof value !== 'string' || value.length > 350) return false;
@@ -172,13 +171,13 @@ export default async function(req) {
       }
       const authorizeUrl = buildDiscordAuthorizeUrl({
         clientId,
-        redirectUri: CANONICAL_REDIRECT_URI,
+        redirectUri: requestedRedirectUri,
         scopes: ['identify', 'email'],
         state,
       });
       return Response.json({
         authorize_url: authorizeUrl,
-        redirect_uri: CANONICAL_REDIRECT_URI,
+        redirect_uri: requestedRedirectUri,
       });
     }
 
@@ -192,7 +191,7 @@ export default async function(req) {
         clientId,
         clientSecret,
         code,
-        redirectUri: CANONICAL_REDIRECT_URI,
+        redirectUri: requestedRedirectUri,
       });
       // Prova criptográfica da identidade Discord, exigida depois no "link"
       const linkToken = await makeLinkToken(clientSecret, profile.discord_id);

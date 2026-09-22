@@ -47,6 +47,7 @@ const linkDiscordAccount = async (discord, password) => {
       discord_handle: discord.discord_handle,
       discord_avatar_url: discord.discord_avatar_url,
       discord_banner_url: discord.discord_banner_url || "",
+      discord_accent: discord.discord_accent_color || "",
       discord_accent_color: discord.discord_accent_color || "",
       password,
     });
@@ -150,7 +151,7 @@ export default function DiscordCallback() {
         redirect_uri: DISCORD_REDIRECT_URI,
       })
         .then((res) => {
-          const d = res.data;
+          const d = res?.data || res || {};
           const discord = {
             discord_id: d.discord_id,
             link_token: d.link_token,
@@ -158,7 +159,7 @@ export default function DiscordCallback() {
             discord_handle: d.discord_handle,
             discord_avatar_url: d.discord_avatar_url,
             discord_banner_url: d.discord_banner_url || "",
-            discord_accent_color: d.discord_accent_color || "",
+            discord_accent_color: d.discord_accent || d.discord_accent_color || "",
           };
           if (d.status === "login" && d.access_token) {
             base44.auth.setToken(d.access_token);

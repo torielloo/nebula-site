@@ -1,8 +1,8 @@
 import { base44, base44LatestFunctions } from "@/api/base44Client";
 import { safeReturnTo } from "@/lib/authReturnTo";
 
-export const DISCORD_REDIRECT_URI = "https://nebula-os-core-pingu.base44.app/discord-callback";
-export const DISCORD_REDIRECT_ORIGIN = "https://nebula-os-core-pingu.base44.app";
+export const DISCORD_REDIRECT_URI = "https://nebula-os-site-1.base44.app/discord-callback";
+export const DISCORD_REDIRECT_ORIGIN = "https://nebula-os-site-1.base44.app";
 const FLOW_KEY = "nebula_discord_flow";
 const FLOW_TTL_MS = 10 * 60 * 1000;
 
@@ -41,6 +41,18 @@ function requestStatus(error) {
   return Number(error?.status || error?.response?.status || error?.response?.data?.status || 0);
 }
 
+function isFunctionRoutingFailure(error) {
+  const status = requestStatus(error);
+  const detail = String(
+    error?.response?.data?.detail ||
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    ""
+  );
+  return status === 404 || status === 405 || /app not found|function not found|route not found/i.test(detail);
+}
+
 export async function invokeDiscordAuth(payload) {
   let firstError = null;
   const attempts = [
@@ -55,15 +67,14 @@ export async function invokeDiscordAuth(payload) {
       return await client.functions.invoke(functionName, payload);
     } catch (error) {
       firstError ||= error;
-      const status = requestStatus(error);
-      // 404/405 aqui é rota/versionamento de função. Tenta outra combinação
-      // de versão/nome sem transformar um deploy parcial em falha de login.
-      if (status && status !== 404 && status !== 405) throw error;
+      // Rota/versão antiga da função não pode derrubar o login inteiro.
+      // Tenta os aliases e a versão mais recente antes de devolver erro.
+      if (!isFunctionRoutingFailure(error)) throw error;
     }
   }
 
   const error = firstError || new Error("Serviço de autenticação do Discord indisponível.");
-  if (!error.message || /status code 404/i.test(error.message)) {
+  if (!error.message || /status code 404|app not found|function not found/i.test(error.message)) {
     error.message = "O login do Discord está atualizando. Tente novamente em alguns segundos.";
   }
   throw error;

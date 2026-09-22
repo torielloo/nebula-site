@@ -35,6 +35,3 @@ dist-ssr
 .env
 .vite
 base44/.app.jsonc
-.banner-new-*.b64
-tmp-banner-*.b64
-tmp/
