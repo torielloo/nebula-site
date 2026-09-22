@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUp, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useI18n } from "@/lib/i18n";
+import { NEBULA_WALLPAPER_URL } from "@/lib/brandAssets";
 
 const sections = [
   { title: "terms.s1.title", paragraphs: ["terms.s1.p1", "terms.s1.p2"] },
@@ -24,7 +25,8 @@ export default function Terms() {
 
   return (
     <div id="terms-top" className="min-h-screen bg-[#07080b] text-white">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_50%_-10%,hsl(var(--primary)/0.10),transparent_32rem),linear-gradient(180deg,#0a0b0f_0%,#07080b_60%,#050506_100%)]" />
+      <img src={NEBULA_WALLPAPER_URL} alt="" aria-hidden="true" className="fixed inset-0 -z-20 h-full w-full object-cover opacity-[0.15]" />
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_50%_-10%,rgba(227,27,35,0.10),transparent_32rem),linear-gradient(180deg,rgba(10,11,15,0.88)_0%,rgba(7,8,11,0.95)_60%,#050506_100%)]" />
 
       <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#07080b]/88 backdrop-blur-2xl">
         <div className="mx-auto flex min-h-16 w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6">

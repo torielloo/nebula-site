@@ -40,7 +40,7 @@ class CallPresenceWatcher {
 
       connect();
       entry.timer = setInterval(() => {
-        if (Date.now() - entry.lastMsg > 15000) {
+        if (Date.now() - entry.lastMsg > 8000) {
           try {
             if (entry.room) entry.room.close();
           } catch {
@@ -49,7 +49,7 @@ class CallPresenceWatcher {
           entry.lastMsg = Date.now();
           connect();
         }
-      }, 5000);
+      }, 2500);
     }
     entry.cbs.add(cb);
     cb(entry.roster);

@@ -25,6 +25,23 @@ export function onUiClickSoundChange(handler) {
 let ctx = null;
 let lastPlayedAt = 0;
 
+function emitClick(context) {
+  if (!context || context.state !== "running") return;
+  const osc = context.createOscillator();
+  const gain = context.createGain();
+  const start = context.currentTime;
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(640, start);
+  osc.frequency.exponentialRampToValueAtTime(430, start + 0.045);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(0.045, start + 0.0035);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.055);
+  osc.connect(gain);
+  gain.connect(context.destination);
+  osc.start(start);
+  osc.stop(start + 0.06);
+}
+
 export function playUiClickSound() {
   if (typeof window === "undefined" || !getUiClickSoundEnabled()) return;
   const now = performance.now();
@@ -33,20 +50,11 @@ export function playUiClickSound() {
   try {
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextCtor) return;
-    if (!ctx) ctx = new AudioContextCtor();
-    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const start = ctx.currentTime;
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(620, start);
-    osc.frequency.exponentialRampToValueAtTime(420, start + 0.045);
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.022, start + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.055);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(start);
-    osc.stop(start + 0.06);
+    if (!ctx || ctx.state === "closed") ctx = new AudioContextCtor();
+    if (ctx.state === "suspended") {
+      void ctx.resume().then(() => emitClick(ctx)).catch(() => {});
+      return;
+    }
+    emitClick(ctx);
   } catch {}
 }

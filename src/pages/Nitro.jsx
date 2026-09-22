@@ -33,7 +33,6 @@ import NitroHistory from "@/components/nitro/NitroHistory";
 import MixerPromoCard from "@/components/nitro/MixerPromoCard";
 import NitroPlansShowcase from "@/components/nitro/NitroPlansShowcase";
 import DiscordProfileSimulator from "@/components/nitro/DiscordProfileSimulator";
-import NitroMediaStudio from "@/components/nitro/NitroMediaStudio";
 import NitroFramesStudio from "@/components/nitro/NitroFramesStudio";
 import NitroThemeBuilder from "@/components/nitro/NitroThemeBuilder";
 import { fetchNitroStatus } from "@/lib/nitro";
@@ -41,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useUiStudio } from "@/lib/uiStudio/UiStudioContext";
 import { UI_PRESETS } from "@/lib/uiStudio/defaults";
+import { displayName as getDisplayName } from "@/lib/displayName";
 
 const ACCENTS = [
   { label: "nitro.color_crimson", value: "#ff263b", swatch: "#ff263b" },
@@ -58,7 +58,7 @@ const STUDIO_TABS = [
 ];
 
 export default function Nitro() {
-  const { user, checkUserAuth } = useAuth();
+  const { user, checkUserAuth, mergeUserProfile } = useAuth();
   const { t } = useI18n();
   const ui = useUiStudio();
   const profile = (user && user.profile) || {};
@@ -126,7 +126,9 @@ export default function Nitro() {
       let lastError = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
-          await base44.functions.invoke("saveNitroProfileStyle", { changes });
+          const savedResult = await base44.functions.invoke("saveNitroProfileStyle", { changes });
+          if (savedResult?.data?.profile) mergeUserProfile(savedResult.data.profile);
+          else mergeUserProfile(changes);
           savedOk = true;
           break;
         } catch (error) {
@@ -139,7 +141,8 @@ export default function Nitro() {
         }
       }
       if (!savedOk) throw lastError || new Error("Não foi possível salvar a personalização Nitro.");
-      await checkUserAuth();
+      // O backend já devolve o profile persistido e mergeUserProfile atualiza a UI imediatamente.
+      // Evita uma leitura auth.me potencialmente defasada sobrescrever as cores recém-salvas.
       setSaved(true);
       window.setTimeout(() => setSaved(false), 2000);
       return true;
@@ -151,7 +154,7 @@ export default function Nitro() {
     }
   };
 
-  const name = (user && (user.full_name || (user.email || "Você").split("@")[0])) || "Você";
+  const name = getDisplayName(user);
   const sounds = { notify: true, call: true, ...(profile.sounds || {}) };
   const soundsDefault = !!sounds.notify && !!sounds.call;
 
@@ -164,6 +167,7 @@ export default function Nitro() {
       frame: "",
       custom_tag: "",
       theme: "nebula",
+      cursor_effect: "none",
       sounds: { notify: true, call: true },
     });
     if (ok) {
@@ -212,7 +216,6 @@ export default function Nitro() {
     { id: "beneficios", label: "Benefícios", icon: Crown },
     { id: "planos-nitro", label: "Planos", icon: CreditCard },
     { id: "simulador-perfil", label: "Profile Lab", icon: UserRound },
-    { id: "media-studio", label: "Media Studio", icon: ImagePlus },
     { id: "theme-builder", label: "Theme Builder", icon: Palette },
     { id: "renovar", label: active ? "Renovar" : "Comprar", icon: CreditCard },
     { id: "codigo-nitro", label: "Código", icon: Gift },
@@ -269,15 +272,13 @@ export default function Nitro() {
         />
 
         <DiscordProfileSimulator
+          user={user}
           profile={profile}
           active={active}
           saving={saving}
           save={save}
           name={name}
-          handle={profile.discord_handle || profile.username || "usuario"}
         />
-
-        <NitroMediaStudio />
 
         <NitroThemeBuilder
           profile={profile}
@@ -418,7 +419,7 @@ export default function Nitro() {
                       <input
                         type="color"
                         value={profile.accent_2 || "#a855f7"}
-                        onChange={(event) => save({ accent_2: event.target.value })}
+                        onChange={(event) => save({ accent_2: event.target.value, accent_source: "custom" })}
                         disabled={!active || saving}
                         className="mt-2 h-10 w-full cursor-pointer rounded-lg border border-border/40 bg-background p-1"
                       />

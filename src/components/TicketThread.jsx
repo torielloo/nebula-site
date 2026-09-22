@@ -60,7 +60,7 @@ const sortMessagesOldestFirst = (rows = []) => [...rows].sort((a, b) => {
 
 export default function TicketThread({ ticket, user, staffMode, onStaffReply, onCloseTicket, onMentionSeen, readOnly = false }) {
   const { t } = useI18n();
-  const { channel, setChannel, leave: leaveCall } = useCall();
+  const { channel, setChannel, leave: leaveCall, peers } = useCall();
   const [messages, setMessages] = useState(null);
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -70,7 +70,7 @@ export default function TicketThread({ ticket, user, staffMode, onStaffReply, on
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const [actionBusy, setActionBusy] = useState(null);
-  const [avatarMap, setAvatarMap] = useState({});
+  const [profileMap, setProfileMap] = useState({});
   const [mentionUsers, setMentionUsers] = useState([]);
   const [ticketCallOpen, setTicketCallOpen] = useState(false);
   const [ticketCallBusy, setTicketCallBusy] = useState(false);
@@ -192,12 +192,12 @@ export default function TicketThread({ ticket, user, staffMode, onStaffReply, on
   }, [ticket.id]);
 
   useEffect(() => {
-    const ids = [...new Set([ticket.requester_user_id, ...(orderedMessages || []).map((m) => m.author_id)].filter(Boolean))].filter((id) => !avatarMap[id]);
+    const ids = [...new Set([ticket.requester_user_id, ...(orderedMessages || []).map((m) => m.author_id)].filter(Boolean))].filter((id) => !profileMap[id]);
     if (!ids.length) return;
     let cancelled = false;
-    Promise.all(ids.slice(0, 20).map((id) => base44.functions.invoke("userDirectory", { action: "profile", user_id: id }).then((res) => [id, res.data?.profile?.avatar_url || ""]).catch(() => [id, ""]))).then((pairs) => {
+    Promise.all(ids.slice(0, 20).map((id) => base44.functions.invoke("userDirectory", { action: "profile", user_id: id, request_nonce: Date.now() }).then((res) => [id, res.data?.profile || null]).catch(() => [id, null]))).then((pairs) => {
       if (cancelled) return;
-      setAvatarMap((current) => ({ ...current, ...Object.fromEntries(pairs) }));
+      setProfileMap((current) => ({ ...current, ...Object.fromEntries(pairs) }));
     });
     return () => { cancelled = true; };
   }, [ticket.requester_user_id, msgCount]);
@@ -219,7 +219,8 @@ export default function TicketThread({ ticket, user, staffMode, onStaffReply, on
     ticketRequesterName: ticket.requester_name || t("common.user"),
   };
   const ticketCallRoster = useCallPresence(callLocked ? null : ticketCallChannel.code);
-  const ticketCallCount = ticketCallRoster.length;
+  const liveLocalCount = inThisTicketCall ? ((peers?.length || 0) + 1) : 0;
+  const ticketCallCount = Math.max(ticketCallRoster.length, liveLocalCount);
 
   useEffect(() => {
     // Ao voltar para um ticket cuja call continua ativa, reabre a interface.
@@ -666,7 +667,14 @@ export default function TicketThread({ ticket, user, staffMode, onStaffReply, on
 
       <div ref={scrollRef} className="scrollbar-thin min-h-[320px] flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-2xl border border-border/50 bg-secondary/30 p-2.5 pr-2 md:p-3 md:pr-2.5 lg:h-[calc(100dvh-455px)] lg:max-h-[680px] lg:min-h-[400px] lg:flex-none">
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex items-start gap-2">
-          <ProfileAvatar name={ticket.requester_name || t("common.user")} avatar={avatarMap[ticket.requester_user_id]} size="sm" />
+          <ProfileAvatar
+            name={ticket.requester_name || t("common.user")}
+            avatar={profileMap[ticket.requester_user_id]?.avatar_url}
+            size="sm"
+            status={profileMap[ticket.requester_user_id]?.status}
+            frame={profileMap[ticket.requester_user_id]?.frame || ""}
+            customFrameUrl={profileMap[ticket.requester_user_id]?.custom_frame_url || ""}
+          />
           <div className="min-w-0 max-w-full flex-1 overflow-hidden rounded-lg rounded-tl-sm border border-border/50 bg-card px-2.5 py-1.5">
             <div className="flex items-center gap-2">
               {ticket.requester_user_id ? (
@@ -688,7 +696,15 @@ export default function TicketThread({ ticket, user, staffMode, onStaffReply, on
         <AnimatePresence initial={false}>
           {orderedMessages && orderedMessages.map((m) => (
             <motion.div id={`ticket-message-${m.id}`} key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex scroll-mt-6 items-start gap-2">
-              <ProfileAvatar name={m.author_name || t("common.user")} avatar={avatarMap[m.author_id]} size="sm" className={cn(m.is_staff && "ring-1 ring-primary/40 rounded-full")} />
+              <ProfileAvatar
+                name={m.author_name || t("common.user")}
+                avatar={profileMap[m.author_id]?.avatar_url}
+                size="sm"
+                status={profileMap[m.author_id]?.status}
+                frame={profileMap[m.author_id]?.frame || ""}
+                customFrameUrl={profileMap[m.author_id]?.custom_frame_url || ""}
+                className={cn(m.is_staff && "rounded-full")}
+              />
               {renderBubble(m)}
             </motion.div>
           ))}

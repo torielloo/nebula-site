@@ -59,6 +59,7 @@ export default function ChatWindow({ conversation, me, canUseCore = false, onBac
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const [actionBusy, setActionBusy] = useState(null);
+  const [callStarting, setCallStarting] = useState(false);
   const [coreVoiceConfig, setCoreVoiceConfig] = useState(null);
   const [coreModel, setCoreModel] = useState("");
   const [coreModelFallback, setCoreModelFallback] = useState(false);
@@ -115,11 +116,7 @@ export default function ChatWindow({ conversation, me, canUseCore = false, onBac
   const participants = (conversation.participant_meta || []).filter((p) => p.id !== me.id);
   const isCoreOS = (conversation.participants || []).includes("core-os");
   const coreMode = String(partner.name || "").toLowerCase().includes("owner") ? "owner" : "staff";
-  const privatePairKey = [...(conversation.participants || [])]
-    .filter((id) => id && id !== "core-os")
-    .sort()
-    .join("--");
-  const callChannel = { name: partner.name, code: `DM-${privatePairKey || conversation.id}`, privateDm: true, conversationId: conversation.id };
+  const callChannel = { name: partner.name, code: `DM-${conversation.id}`, privateDm: true, conversationId: conversation.id, peerUserId: partnerId };
   const inThisCall = !!(channel && channel.code === callChannel.code);
   const callRoster = useCallPresence(callChannel.code);
   const partnerInCall = !inThisCall && callRoster.length > 0;
@@ -557,18 +554,33 @@ export default function ChatWindow({ conversation, me, canUseCore = false, onBac
   };
 
   const startCall = async () => {
+    if (callStarting || inThisCall) return;
+    setCallStarting(true);
     setSendError("");
     try {
       const res = await base44.functions.invoke("privateCallInvite", {
         action: "ring",
-        callee_id: partnerId,
         conversation_id: conversation.id,
-        channel_code: callChannel.code,
       });
+      const invite = res?.data?.invite;
+      if (!invite?.channel_code) throw new Error(res?.data?.error || "Convite de ligação não confirmado.");
       if (res.data?.message) setMessages((prev) => mergeMessageRows(prev || [], [res.data.message]));
-      await setChannel(callChannel);
+      await setChannel({
+        ...callChannel,
+        code: invite.channel_code,
+        conversationId: invite.conversation_id || conversation.id,
+        peerUserId: res?.data?.peer_user_id || partnerId,
+      });
     } catch (error) {
-      setSendError(error?.response?.data?.code === "muted" || error?.code === "muted" ? t("mute.call_blocked") : t("dm.call_error"));
+      const code = error?.response?.data?.code || error?.code;
+      const serverMessage = error?.response?.data?.error || error?.message;
+      setSendError(
+        code === "muted"
+          ? t("mute.call_blocked")
+          : (serverMessage && serverMessage !== "Failed to fetch" ? serverMessage : t("dm.call_error"))
+      );
+    } finally {
+      setCallStarting(false);
     }
   };
 
@@ -686,10 +698,11 @@ export default function ChatWindow({ conversation, me, canUseCore = false, onBac
           ) : !isCoreOS ? (
             <button
               onClick={startCall}
-              className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/25"
+              disabled={callStarting}
+              className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/25 disabled:cursor-wait disabled:opacity-60"
             >
-              <Phone className="h-3.5 w-3.5" />
-              {t("dm.call")}
+              {callStarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Phone className="h-3.5 w-3.5" />}
+              {callStarting ? "Ligando..." : t("dm.call")}
             </button>
           ) : null}
         </div>

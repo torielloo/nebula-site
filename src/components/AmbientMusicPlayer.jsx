@@ -164,7 +164,12 @@ export default function AmbientMusicPlayer() {
   const currentQueueIndex = useMemo(() => queueTracks.findIndex((item) => item.id === track?.id), [queueTracks, track?.id]);
 
   useEffect(() => {
-    playbackWantedRef.current = !readStoredPaused();
+    const pausedOnBoot = readStoredPaused();
+    playbackWantedRef.current = !pausedOnBoot;
+    if (pausedOnBoot) {
+      playbackVersionRef.current += 1;
+      try { audioRef.current?.pause(); } catch {}
+    }
 
     // Limpa qualquer <audio> legado que tenha sobrado de uma versão anterior
     // do player durante atualização/HMR. O player atual usa somente o singleton
@@ -526,6 +531,7 @@ export default function AmbientMusicPlayer() {
       } catch { gain.gain.value = 0; }
     }
     try { broadcastRef.current?.postMessage({ type: "paused", id: instanceIdRef.current }); } catch { /* ignore */ }
+    try { window.dispatchEvent(new Event("nebula:ambient-pause-all")); } catch { /* ignore */ }
     setNeedsInteraction(false);
     setPlaying(false);
   }, []);
@@ -629,6 +635,14 @@ export default function AmbientMusicPlayer() {
       }
     };
     const loaded = () => {
+      // A preferência persistida é a fonte de verdade em cada load/durationchange.
+      // Isso fecha corridas de F5/HMR em que um callback antigo tentava tocar depois.
+      if (readStoredPaused()) {
+        playbackWantedRef.current = false;
+        resumeAfterTrackChangeRef.current = false;
+        playbackVersionRef.current += 1;
+        try { audio.pause(); } catch {}
+      }
       setDuration(Number.isFinite(audio.duration) ? audio.duration : Number(track?.duration) || 0);
       setLoadFailed(false);
       if (skipRestoreRef.current) {

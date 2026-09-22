@@ -7,6 +7,7 @@ export const displayName = (user) => {
   if (!user) return "Você";
   const p = user.profile || {};
   return (
+    p.display_name ||
     p.discord_display_name ||
     p.discord_username ||
     p.name ||

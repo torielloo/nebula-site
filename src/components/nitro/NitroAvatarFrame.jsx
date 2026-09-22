@@ -27,7 +27,7 @@ export default function NitroAvatarFrame({
   innerClassName = "",
 }) {
   return (
-    <div className={cn("nitro-avatar-frame relative inline-grid place-items-center", frame && `nitro-frame-${frame}`, className)}>
+    <div className={cn("nitro-avatar-frame relative inline-grid h-fit w-fit place-items-center align-top leading-none", frame && `nitro-frame-${frame}`, className)}>
       <div className={cn("relative z-[2] overflow-hidden rounded-full", innerClassName)}>{children}</div>
       {frame === "custom" && customFrameUrl ? (
         <img

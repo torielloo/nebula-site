@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import Reveal from "@/components/motion/Reveal";
 import { cn } from "@/lib/utils";
@@ -15,18 +14,28 @@ const BATTLE_PASS_SLIDES = [
   { src: "/battle-pass/groot.jpg", altKey: "battlepass.alt_groot" },
 ];
 
+if (typeof window !== "undefined") {
+  BATTLE_PASS_SLIDES.forEach(({ src }) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = src;
+    image.decode?.().catch(() => {});
+  });
+}
+
 function BattlePassMedal() {
   return (
     <div
       aria-hidden="true"
       className="relative grid h-[64px] w-[64px] shrink-0 place-items-center sm:h-[112px] sm:w-[112px]"
     >
-      <div className="absolute inset-[11%] rotate-45 rounded-[24%] bg-gradient-to-br from-[#fff3a0] via-[#ffbf1c] to-[#8d4700] shadow-[0_8px_18px_-10px_rgba(255,184,0,.45)]" />
-      <div className="absolute inset-[20%] rotate-45 rounded-[22%] border-[5px] border-[#fff0a0]/80 bg-gradient-to-br from-[#ffc21c] to-[#a75a00]" />
-      <div className="absolute bottom-[3%] h-[32%] w-[72%] rounded-b-full border border-[#fff0a0]/35 bg-gradient-to-b from-[#ffbf1c] via-[#c67a0d] to-[#8d4700] shadow-[0_10px_18px_-12px_rgba(255,184,0,.45)]" />
-      <div className="relative grid h-[52%] w-[52%] place-items-center rounded-full border-[4px] border-[#fff3a0] bg-gradient-to-br from-[#ffda42] to-[#a95d00] shadow-inner">
-        <Star className="h-[62%] w-[62%] fill-[#fff2a0] text-[#fff2a0] drop-shadow-[0_2px_0_rgba(110,55,0,.8)]" />
-      </div>
+      <img
+        src="/battle-pass-symbol.webp"
+        alt=""
+        className="h-full w-full object-contain"
+        style={{ filter: "saturate(1.45) brightness(1.08) sepia(0.08)" }}
+        draggable={false}
+      />
     </div>
   );
 }

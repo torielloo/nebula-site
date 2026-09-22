@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { guardRequest, securityResponse } from '../../shared/security.ts';
 
 const PLAN_DAYS: Record<string, number> = { nitro_mensal: 30, nitro_anual: 365, nitro_90: 90 };
-const STYLE_KEYS = new Set(['accent', 'accent_2', 'accent_source', 'background_url', 'avatar_url', 'banner_url', 'frame', 'custom_frame_url', 'custom_tag', 'theme', 'sounds', 'name_gradient_a', 'name_gradient_b', 'cursor_effect', 'nitro_pronouns', 'nitro_status_text', 'nitro_about']);
+const STYLE_KEYS = new Set(['display_name', 'accent', 'accent_2', 'accent_source', 'background_url', 'avatar_url', 'banner_url', 'frame', 'custom_frame_url', 'custom_tag', 'theme', 'sounds', 'name_gradient_a', 'name_gradient_b', 'cursor_effect', 'nitro_pronouns', 'nitro_status_text', 'nitro_about', 'nitro_badges']);
 
 function expiresAtFor(row: any) {
   if (row?.expires_at) {
@@ -154,7 +154,9 @@ function sanitizeChanges(raw: any) {
   const changes: any = {};
   for (const [key, value] of Object.entries(raw || {})) {
     if (!STYLE_KEYS.has(key)) continue;
-    if (key === 'accent' || key === 'accent_2') {
+    if (key === 'display_name') {
+      changes.display_name = String(value || '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 64);
+    } else if (key === 'accent' || key === 'accent_2') {
       const color = safeColor(value);
       if (color === null) throw Object.assign(new Error('Cor inválida'), { status: 400 });
       changes[key] = color;
@@ -179,11 +181,14 @@ function sanitizeChanges(raw: any) {
       const v = String(value || 'none');
       changes.cursor_effect = ['none', 'spark', 'nebula', 'prism'].includes(v) ? v : 'none';
     } else if (key === 'nitro_pronouns') {
-      changes.nitro_pronouns = String(value || '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40);
+      changes.nitro_pronouns = String(value || '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 20);
     } else if (key === 'nitro_status_text') {
-      changes.nitro_status_text = String(value || '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 80);
+      changes.nitro_status_text = String(value || '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40);
     } else if (key === 'nitro_about') {
       changes.nitro_about = String(value || '').normalize('NFKC').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, 300);
+    } else if (key === 'nitro_badges') {
+      const allowed = new Set(['hypesquad', 'booster', 'developer', 'supporter']);
+      changes.nitro_badges = Array.from(new Set((Array.isArray(value) ? value : []).map((item) => String(item || '')).filter((item) => allowed.has(item)))).slice(0, 4);
     } else if (key === 'custom_tag') {
       changes.custom_tag = normalizeTag(value);
     } else if (key === 'theme') {
@@ -217,12 +222,30 @@ export default async function(req: Request) {
     });
 
     const svc = base44.asServiceRole;
-    const privilegedUiEditor = ['owner', 'dev'].includes(String(user.role || ''));
-    if (!privilegedUiEditor && !(await hasActiveNitro(svc, user))) {
+    const role = String(user.role || 'user');
+    const privilegedUiEditor = ['owner', 'dev'].includes(role);
+    let activeNitroCache: boolean | null = null;
+    const getActiveNitro = async () => {
+      if (activeNitroCache == null) activeNitroCache = await hasActiveNitro(svc, user);
+      return activeNitroCache;
+    };
+    if (!privilegedUiEditor && !(await getActiveNitro())) {
       return Response.json({ error: 'Nébula Nitro ativo é necessário' }, { status: 403 });
     }
 
     const changes = sanitizeChanges(body?.changes);
+    if (Object.prototype.hasOwnProperty.call(changes, 'nitro_badges')) {
+      const rank: Record<string, number> = { user: 0, support: 40, staff: 60, moderator: 60, admin: 80, dev: 90, owner: 100 };
+      const userRank = rank[role] || 0;
+      const nitroActive = await getActiveNitro();
+      changes.nitro_badges = (changes.nitro_badges || []).filter((badge: string) => {
+        if (badge === 'developer') return userRank >= 90;
+        if (badge === 'supporter') return nitroActive;
+        if (badge === 'hypesquad') return userRank >= 60;
+        if (badge === 'booster') return nitroActive;
+        return false;
+      });
+    }
     const uiConfig = sanitizeUiConfig(body?.ui_config);
     if (!Object.keys(changes).length && !uiConfig) {
       return Response.json({ error: 'Nenhuma alteração válida' }, { status: 400 });

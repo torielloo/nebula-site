@@ -13,14 +13,14 @@ const inputCls =
 export default function EditProfileSection({ profile, save, saving, nitroActive, handle }) {
   const { t } = useI18n();
   const [displayName, setDisplayName] = useState(profile.display_name || "");
-  const [customStatus, setCustomStatus] = useState(profile.custom_status || "");
+  const [customStatus, setCustomStatus] = useState(profile.nitro_status_text || profile.custom_status || "");
   const [bio, setBio] = useState(profile.bio || "");
 
   useEffect(() => {
     setDisplayName(profile.display_name || "");
-    setCustomStatus(profile.custom_status || "");
+    setCustomStatus(profile.nitro_status_text || profile.custom_status || "");
     setBio(profile.bio || "");
-  }, [profile.display_name, profile.custom_status, profile.bio]);
+  }, [profile.display_name, profile.custom_status, profile.nitro_status_text, profile.bio]);
 
   const renderSaveBtn = (onClick, disabled) => (
     <Button size="sm" className="h-10 shrink-0 rounded-lg px-4" onClick={onClick} disabled={saving || disabled}>
@@ -60,10 +60,15 @@ export default function EditProfileSection({ profile, save, saving, nitroActive,
               value={customStatus}
               onChange={(e) => setCustomStatus(e.target.value)}
               placeholder={t("perfil.custom_status_ph")}
-              maxLength={64}
+              maxLength={40}
               className={inputCls}
             />
-            {renderSaveBtn(() => save({ custom_status: customStatus }), customStatus === (profile.custom_status || ""))}
+            {renderSaveBtn(
+              () => save(nitroActive
+                ? { custom_status: customStatus, nitro_status_text: customStatus }
+                : { custom_status: customStatus }),
+              customStatus === (profile.nitro_status_text || profile.custom_status || "")
+            )}
           </div>
         </div>
 

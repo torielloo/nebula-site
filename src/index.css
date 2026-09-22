@@ -12,6 +12,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* A identidade oficial deve permanecer limpa: sem glow colorido nas logos. */
+img[src*="nebula-isotipo"],
+img[src*="nebula-imagotipo"] {
+  filter: none !important;
+  box-shadow: none !important;
+}
+
 @layer base {
   :root {
     --background: 30 12% 96%;

@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSiteConfig } from "@/lib/SiteConfigContext";
 import { SITE_INTRO_AUDIO_SRC } from "@/lib/siteIntroAudio";
-
-const DEFAULT_LOGO =
-  "https://media.base44.com/images/public/6aa87196309472108abb65fb/8eaf849a6_NEBULAV2.png";
+import { NEBULA_LOGO_URL, NEBULA_WALLPAPER_URL } from "@/lib/brandAssets";
 const INTRO_VOLUME = 0.5;
 const FADE_SECONDS = 1.8;
 const REVERB_TAIL_MS = 1050;
@@ -128,6 +126,11 @@ export default function SiteIntro({ onComplete }) {
 
     const play = async () => {
       if (doneRef.current) return;
+      if (window.localStorage.getItem("nebula:ambient-paused") === "1") {
+        try { audio.pause(); } catch {}
+        setWaitingForInteraction(false);
+        return;
+      }
       try {
         const graph = await setupGraph();
         if (graph?.context?.state === "suspended") await graph.context.resume();
@@ -161,15 +164,27 @@ export default function SiteIntro({ onComplete }) {
       window.setTimeout(finish, 500);
     };
 
+    const onGlobalPause = () => {
+      try { audio.pause(); } catch {}
+      try { audio.muted = true; } catch {}
+      setWaitingForInteraction(false);
+    };
+
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("error", onError);
+    window.addEventListener("nebula:ambient-pause-all", onGlobalPause);
 
-    window.addEventListener("pointerdown", retry, true);
-    window.addEventListener("touchstart", retry, true);
-    window.addEventListener("keydown", retry, true);
-
-    play();
+    const ambientPaused = window.localStorage.getItem("nebula:ambient-paused") === "1";
+    if (!ambientPaused) {
+      window.addEventListener("pointerdown", retry, true);
+      window.addEventListener("touchstart", retry, true);
+      window.addEventListener("keydown", retry, true);
+      play();
+    } else {
+      try { audio.pause(); } catch {}
+      setWaitingForInteraction(false);
+    }
 
     const safetyTimer = window.setTimeout(() => {
       beginFade();
@@ -182,6 +197,7 @@ export default function SiteIntro({ onComplete }) {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
+      window.removeEventListener("nebula:ambient-pause-all", onGlobalPause);
       try { audio.pause(); } catch {}
       const graph = graphRef.current;
       if (graph?.context && graph.context.state !== "closed") {
@@ -191,27 +207,30 @@ export default function SiteIntro({ onComplete }) {
     };
   }, [beginFade, finish]);
 
-  const logoUrl = siteConfig.brand?.logo_url || DEFAULT_LOGO;
+  const logoUrl = NEBULA_LOGO_URL;
   const brandName = siteConfig.brand?.name || "NÉBULA OS";
 
   return (
     <div
       className={
-        "fixed inset-0 z-[250] grid place-items-center overflow-hidden bg-black transition-all duration-[1600ms] ease-out " +
+        "fixed inset-0 z-[250] grid place-items-center overflow-hidden bg-black transition-all ease-out " +
         (fading ? "pointer-events-none scale-[1.025] opacity-0 blur-[2px]" : "opacity-100")
       }
       style={{
+        transitionDuration: "1600ms",
         background:
-          "radial-gradient(circle at 50% 44%, rgba(220,20,35,0.14) 0%, rgba(35,0,4,0.08) 25%, #000 62%)",
+          "radial-gradient(circle at 50% 44%, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 28%, #000 66%)",
       }}
       aria-label="Intro do Nébula OS"
     >
+      <img src={NEBULA_WALLPAPER_URL} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.28]" />
+      <div className="pointer-events-none absolute inset-0 bg-black/45" />
       <div className="relative flex -translate-y-2 flex-col items-center px-6 text-center">
-        <div className="absolute h-44 w-44 rounded-full bg-red-600/10 blur-3xl sm:h-56 sm:w-56" />
+        <div className="absolute h-44 w-72 rounded-full bg-white/[0.018] blur-3xl sm:h-56 sm:w-96" />
         <img
           src={logoUrl}
           alt={brandName}
-          className="relative h-32 w-32 object-contain drop-shadow-[0_0_28px_rgba(239,35,60,0.35)] sm:h-40 sm:w-40"
+          className="relative h-28 w-48 object-contain sm:h-36 sm:w-60"
           draggable={false}
         />
         <p className="relative mt-5 text-[13px] font-extrabold tracking-[0.32em] text-red-500 drop-shadow-[0_0_12px_rgba(239,35,60,0.35)] sm:text-sm">

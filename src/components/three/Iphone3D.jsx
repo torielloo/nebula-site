@@ -2,8 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-
-const LOGO_URL = "https://media.base44.com/images/public/6aa87196309472108abb65fb/8eaf849a6_NEBULAV2.png";
+import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 
 /** Smartphone premium laranja inspirado na linguagem visual de um iPhone Pro Max. */
 export default function Iphone3D({ className = "h-64 w-full" }) {
@@ -77,15 +76,84 @@ export default function Iphone3D({ className = "h-64 w-full" }) {
     island.position.set(0, 2.08, 0.225);
     phone.add(island);
 
-    // Logo Nébula centralizada na tela.
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    const logoTexture = loader.load(LOGO_URL, () => renderer.render(scene, camera));
-    logoTexture.colorSpace = THREE.SRGBColorSpace;
-    const logoMat = new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true, opacity: 0.96, depthWrite: false });
-    const logo = new THREE.Mesh(new THREE.PlaneGeometry(1.22, 1.22), logoMat);
-    logo.position.set(0, -0.02, 0.221);
-    phone.add(logo);
+    // Nova logo branca Nébula, convertida em geometria real.
+    // Assim ela não depende mais de textura SVG e não some no WebGL.
+    // Há exatamente uma logo na frente e uma atrás.
+    const svgLoader = new SVGLoader();
+    let logoLoadCancelled = false;
+
+    svgLoader.load(
+      "/brand/nebula-phone-mark.svg",
+      (data) => {
+        if (logoLoadCancelled) return;
+
+        const path = data.paths?.[0];
+        if (!path) return;
+
+        const shapes = SVGLoader.createShapes(path);
+        if (!shapes.length) return;
+
+        const logoGeometry = new THREE.ShapeGeometry(shapes);
+        logoGeometry.computeBoundingBox();
+
+        const box = logoGeometry.boundingBox;
+        const width = Math.max(0.001, box.max.x - box.min.x);
+        const height = Math.max(0.001, box.max.y - box.min.y);
+        const centerX = (box.min.x + box.max.x) / 2;
+        const centerY = (box.min.y + box.max.y) / 2;
+
+        logoGeometry.translate(-centerX, -centerY, 0);
+        const normalizedScale = 1 / width;
+        // Mantém a geometria com escala positiva. O flip vertical necessário
+        // para converter as coordenadas SVG é feito em cada mesh, evitando
+        // inverter silenciosamente o winding/normal da geometria.
+        logoGeometry.scale(normalizedScale, normalizedScale, 1);
+
+        const makeLogoMaterial = () => new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: false,
+          opacity: 1,
+          depthWrite: false,
+          depthTest: true,
+          toneMapped: false,
+          // DoubleSide aqui é intencional: os flips de escala não podem fazer
+          // a logo sumir por backface culling. O próprio corpo do celular
+          // continua ocultando a logo da face oposta via depthTest.
+          side: THREE.DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: -4,
+          polygonOffsetUnits: -4,
+        });
+
+        const visualWidth = 1.56;
+
+        // Frente: instância própria, colada alguns milímetros acima do vidro.
+        const frontGeometry = logoGeometry.clone();
+        const frontLogo = new THREE.Mesh(frontGeometry, makeLogoMaterial());
+        frontLogo.name = "nebula-logo-front";
+        frontLogo.scale.set(visualWidth, -visualWidth, 1);
+        frontLogo.position.set(0, -0.12, 0.238);
+        frontLogo.renderOrder = 30;
+        phone.add(frontLogo);
+
+        // Traseira: segunda instância independente. O X negativo compensa
+        // o espelhamento causado pela rotação de 180° e deixa o símbolo correto.
+        const backGeometry = logoGeometry.clone();
+        const backLogo = new THREE.Mesh(backGeometry, makeLogoMaterial());
+        backLogo.name = "nebula-logo-back";
+        backLogo.scale.set(-visualWidth, visualWidth, 1);
+        backLogo.position.set(0.10, -0.38, -0.238);
+        backLogo.rotation.y = Math.PI;
+        backLogo.renderOrder = 30;
+        phone.add(backLogo);
+
+        logoGeometry.dispose();
+
+        renderer.render(scene, camera);
+      },
+      undefined,
+      () => {}
+    );
 
     // Ilha de câmeras traseira no canto superior esquerdo.
     const cameraPlate = new THREE.Mesh(new RoundedBoxGeometry(1.25, 1.48, 0.13, 6, 0.25), orange);
@@ -181,7 +249,7 @@ export default function Iphone3D({ className = "h-64 w-full" }) {
         if (Array.isArray(obj.material)) obj.material.forEach((m) => m?.dispose?.());
         else obj.material?.dispose?.();
       });
-      logoTexture.dispose();
+      logoLoadCancelled = true;
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
     };

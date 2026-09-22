@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Check, MousePointer2, Palette, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,12 @@ export default function NitroThemeBuilder({ profile, active, saving, save }) {
   const [cursor, setCursor] = useState(profile.cursor_effect || "none");
   const [message, setMessage] = useState("");
 
+  useEffect(() => {
+    if (profile.accent) setPrimary(profile.accent);
+    if (profile.accent_2) setSecondary(profile.accent_2);
+    setCursor(profile.cursor_effect || "none");
+  }, [profile.accent, profile.accent_2, profile.cursor_effect]);
+
   const applyPalette = async (palette) => {
     setPrimary(palette.a);
     setSecondary(palette.b);
@@ -33,8 +39,6 @@ export default function NitroThemeBuilder({ profile, active, saving, save }) {
       accent_2: palette.b,
       accent_source: `nitro-builder:${palette.id}`,
       theme: "nebula_nitro",
-      name_gradient_a: palette.a,
-      name_gradient_b: palette.b,
     });
     setMessage(ok ? `${palette.name} aplicado.` : "Não foi possível aplicar o tema.");
   };
@@ -46,8 +50,6 @@ export default function NitroThemeBuilder({ profile, active, saving, save }) {
       accent_2: secondary,
       accent_source: "nitro-builder:custom",
       theme: "nebula_nitro",
-      name_gradient_a: primary,
-      name_gradient_b: secondary,
       cursor_effect: cursor,
     });
     setMessage(ok ? "Tema personalizado aplicado." : "Não foi possível aplicar.");
@@ -71,7 +73,7 @@ export default function NitroThemeBuilder({ profile, active, saving, save }) {
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Theme Builder</p>
             <h2 className="mt-1 font-heading text-xl font-extrabold">Personalize o visual do seu Nébula</h2>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
-              Aplique paletas prontas ou crie a sua própria combinação. O gradiente também pode ser usado no nome do perfil.
+              Aplique paletas prontas ou crie a sua própria combinação para a interface e os elementos visuais. A cor do nome do perfil não é alterada.
             </p>
           </div>
         </div>

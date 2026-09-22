@@ -72,6 +72,19 @@
             "type": "string"
           }
         },
+        "nitro_badges": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "enum": [
+              "hypesquad",
+              "booster",
+              "developer",
+              "supporter"
+            ]
+          }
+        },
         "avatar_url": {
           "type": "string"
         },
@@ -102,11 +115,11 @@
         },
         "nitro_pronouns": {
           "type": "string",
-          "maxLength": 40
+          "maxLength": 20
         },
         "nitro_status_text": {
           "type": "string",
-          "maxLength": 80
+          "maxLength": 40
         },
         "nitro_about": {
           "type": "string",

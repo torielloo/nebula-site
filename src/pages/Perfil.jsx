@@ -153,6 +153,8 @@ export default function Perfil() {
           name={name}
           handle={handle}
           profile={profile}
+          role={user?.role || "user"}
+          nitroActive={!!nitroUntil}
           uploading={uploading}
           bannerError={bannerError}
           saving={saving}

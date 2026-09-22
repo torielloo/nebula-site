@@ -107,6 +107,7 @@ class CallEngine {
     this.coreOsMessages = [];
     this.joinError = null;
     this.rosterInitialized = false;
+    this.profileRetryTimers = [];
   }
 
   /* ---------- estado / inscrições ---------- */
@@ -161,9 +162,6 @@ class CallEngine {
     this.channel = channel;
     this.profile = profile || {};
     this.joinError = null;
-    // Cada instância/aba recebe uma conexão própria. sessionStorage pode ser
-    // clonado ao duplicar uma aba; reutilizar o mesmo id fazia dois usuários/tabs
-    // ocuparem o mesmo assento da sala e sumirem um para o outro.
     const connId = crypto.randomUUID();
     try {
       const actor = channel?.staffPrivate
@@ -176,18 +174,31 @@ class CallEngine {
       this.emit();
       return;
     }
+
+    const sendProfile = () => {
+      if (!this.room) return;
+      this.room.send({
+        type: "profile",
+        name: this.profile.name,
+        avatar: this.profile.avatar,
+        frame: this.profile.frame,
+        banner: this.profile.banner,
+        user_id: this.profile.user_id,
+        ticket_id: channel?.ticketCall ? channel.ticketId : undefined,
+      });
+    };
+
+    // Presença entra na sala antes de pedir o microfone. Isso elimina o atraso
+    // em que a outra ponta parecia sozinha/"Chamando..." por vários segundos.
+    sendProfile();
+    this.profileRetryTimers = [250, 700, 1400, 2800, 5000].map((delay) => window.setTimeout(() => {
+      if (this.room && this.seat == null) sendProfile();
+    }, delay));
+
     await this.acquireMic();
-    if (!this.room) return; // saiu durante a conexão
-    this.room.send({
-      type: "profile",
-      name: this.profile.name,
-      avatar: this.profile.avatar,
-      frame: this.profile.frame,
-      banner: this.profile.banner,
-      user_id: this.profile.user_id,
-      ticket_id: channel?.ticketCall ? channel.ticketId : undefined,
-    });
+    if (!this.room) return;
     this.pushState();
+    this.pushMediaToPeers();
   }
 
   leave() {
@@ -197,6 +208,8 @@ class CallEngine {
       try { this.room.close(); } catch { /* já fechada */ }
     }
     this.room = null;
+    for (const timer of this.profileRetryTimers || []) window.clearTimeout(timer);
+    this.profileRetryTimers = [];
     this.resetPeers();
     [this.micStream, this.camStream, this.screenStream].forEach((s) => {
       if (s) s.getTracks().forEach((t) => t.stop());
@@ -230,11 +243,14 @@ class CallEngine {
     if (msg.type === "you") {
       if (this.seat != null && this.seat !== msg.seat) this.resetPeers();
       this.seat = msg.seat;
+      for (const timer of this.profileRetryTimers || []) window.clearTimeout(timer);
+      this.profileRetryTimers = [];
       if (!this.connected) {
         this.connected = true;
         playCallTone("join");
-        this.emit();
       }
+      if (this.roster.length) this.onRoster([...this.roster]);
+      else this.emit();
     } else if (msg.type === "presence" || msg.type === "roster") {
       this.onRoster(msg.users || []);
     } else if (msg.type === "signal") {
@@ -312,6 +328,7 @@ class CallEngine {
       uiMuted: false,
       volume: 1,
       healthTimer: null,
+      negotiationTimers: [],
       lastInboundAudioBytes: null,
       staleInboundChecks: 0,
       lastRepairAt: 0,
@@ -374,6 +391,24 @@ class CallEngine {
     // locais antes de setRemoteDescription podia gerar m-lines extras e áudio
     // assimétrico (o segundo participante ouvia, mas não era ouvido).
     this.startPeerHealthCheck(seat, peer);
+    // Recuperação em camadas: se um SDP/ICE se perder durante a entrada,
+    // a malha se recompõe sem precisar sair e entrar novamente na call.
+    peer.negotiationTimers = [1800, 4500, 9000].map((delay) => window.setTimeout(async () => {
+      if (!this.peers.has(seat) || this.seat == null) return;
+      if (pc.connectionState === "connected") return;
+
+      if (this.seat < seat) {
+        if (pc.signalingState === "have-local-offer") {
+          try { await pc.setLocalDescription({ type: "rollback" }); } catch { /* navegador sem rollback */ }
+        }
+        if (pc.signalingState === "stable") {
+          try { pc.restartIce(); } catch { /* navegador sem restartIce */ }
+          await this.makeOffer(seat, true);
+        }
+      } else if (pc.signalingState === "stable") {
+        this.sendSignal(seat, { kind: "renegotiate" });
+      }
+    }, delay));
     return peer;
   }
 
@@ -428,6 +463,8 @@ class CallEngine {
     const peer = this.peers.get(seat);
     if (!peer) return;
     if (peer.healthTimer) window.clearInterval(peer.healthTimer);
+    for (const timer of peer.negotiationTimers || []) window.clearTimeout(timer);
+    peer.negotiationTimers = [];
     for (const node of peer.remoteAudioSources?.values?.() || []) {
       try { node.source.disconnect(); } catch { /* já desconectado */ }
     }

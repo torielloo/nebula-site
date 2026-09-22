@@ -5,6 +5,7 @@ import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
 import NitroAvatarFrame from "@/components/nitro/NitroAvatarFrame";
 import { useI18n } from "@/lib/i18n";
+import NitroBadgeRow from "@/components/nitro/NitroBadgeRow";
 
 const STATUSES = [
   { value: "online", label: "perfil.status_online", dot: "bg-emerald-400" },
@@ -36,6 +37,8 @@ export default function ProfileHeaderCard({
   name,
   handle,
   profile,
+  role,
+  nitroActive,
   uploading,
   bannerError,
   saving,
@@ -47,10 +50,6 @@ export default function ProfileHeaderCard({
   const { t } = useI18n();
   const status = profile.status || "online";
   const initial = (name || "?").trim().charAt(0).toUpperCase() || "?";
-  const gradientName = profile.name_gradient_a && profile.name_gradient_b
-    ? { backgroundImage: `linear-gradient(90deg, ${profile.name_gradient_a}, ${profile.name_gradient_b})`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }
-    : undefined;
-
   const renderBanner = () => {
     if (!profile.banner_url) return null;
     if (isVideo(profile.banner_url))
@@ -143,7 +142,7 @@ export default function ProfileHeaderCard({
 
         <motion.div variants={item} custom={2} initial="hidden" animate="show" className="min-w-0 flex-1 md:pb-2">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-heading text-2xl font-extrabold tracking-tight md:text-3xl" style={gradientName}>{name}</h1>
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">{name}</h1>
             {profile.custom_tag && (
               <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">
                 {profile.custom_tag}
@@ -151,6 +150,12 @@ export default function ProfileHeaderCard({
             )}
           </div>
           <p className="mt-0.5 text-sm font-semibold text-primary md:text-base">@{handle}</p>
+          <NitroBadgeRow badges={profile.nitro_badges} role={role} nitroActive={nitroActive} compact className="mt-2" />
+          {(profile.nitro_status_text || profile.custom_status) && (
+            <div className="mt-2 inline-flex max-w-full items-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground/90">
+              <span className="truncate">{profile.nitro_status_text || profile.custom_status}</span>
+            </div>
+          )}
           <p className="mt-2.5 line-clamp-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
             {profile.bio || t("perfil.bio_default")}
           </p>

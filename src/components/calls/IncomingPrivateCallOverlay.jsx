@@ -61,7 +61,7 @@ function ping() {
 
 export default function IncomingPrivateCallOverlay() {
   const { user } = useAuth();
-  const { setChannel } = useCall();
+  const { setChannel, channel } = useCall();
   const { t, locale } = useI18n();
   const [invites, setInvites] = useState([]);
   const [busy, setBusy] = useState("");
@@ -74,43 +74,129 @@ export default function IncomingPrivateCallOverlay() {
     if (!user?.id) return;
     try {
       const res = await base44.functions.invoke("privateCallInvite", { action: "incoming" });
-      setInvites((res.data?.invites || []).filter((invite) => !isMuted(invite.caller_id)));
-    } catch {}
+      const serverInvites = (res.data?.invites || []).filter((invite) => !isMuted(invite.caller_id));
+      const now = Date.now();
+      setInvites((current) => {
+        const preserved = (current || []).filter((invite) => {
+          const expiresAt = new Date(invite?.expires_at || 0).getTime();
+          const sameActiveCall = channel?.privateDm && channel?.conversationId === invite?.conversation_id;
+          return invite?.status === "ringing" && !sameActiveCall && !isMuted(invite.caller_id) && (!expiresAt || expiresAt > now);
+        });
+        return Array.from(new Map([...serverInvites, ...preserved].map((invite) => [invite.id, invite])).values())
+          .sort((a, b) => new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime());
+      });
+    } catch {
+      // Não derruba visualmente uma ligação já recebida por uma falha transitória de polling.
+    }
   };
 
   useEffect(() => {
     if (!user?.id) return;
     load();
     const unsub = base44.entities.PrivateCallInvite.subscribe((event) => {
-      if (!event?.data) return;
-      if (event.data.callee_id === user.id) load();
+      const invite = event?.data;
+      if (!invite || invite.callee_id !== user.id) return;
+      if (invite.status === "ringing" && !isMuted(invite.caller_id)) {
+        setInvites((current) => [invite, ...current.filter((item) => item.id !== invite.id)]);
+      } else {
+        setInvites((current) => current.filter((item) => item.id !== invite.id));
+      }
+      // Confirma com o backend em seguida, mas não espera a rede para começar a tocar.
+      window.setTimeout(load, 150);
     });
-    const interval = window.setInterval(load, 7000);
+    const interval = window.setInterval(load, 3500);
     return () => { unsub?.(); window.clearInterval(interval); };
   }, [user?.id]);
 
-  const current = useMemo(() => invites[0] || null, [invites]);
+  const current = useMemo(() => {
+    const active = invites.find((invite) => !(channel?.privateDm && channel?.conversationId === invite?.conversation_id));
+    return active || null;
+  }, [invites, channel?.privateDm, channel?.conversationId]);
 
   useEffect(() => {
     window.clearInterval(timerRef.current);
-    if (!current) return undefined;
+    if (!current || busy) return undefined;
     ping();
-    timerRef.current = window.setInterval(ping, 2400);
+    timerRef.current = window.setInterval(ping, 1900);
     return () => window.clearInterval(timerRef.current);
-  }, [current?.id]);
+  }, [current?.id, busy]);
 
   const respond = async (status) => {
     if (!current || busy) return;
+    const selected = current;
     setBusy(status);
     setCallError("");
-    try {
-      await base44.functions.invoke("privateCallInvite", { action: "respond", invite_id: current.id, status });
-      if (status === "accepted") {
-        await setChannel({ name: current.caller_name, code: current.channel_code });
+    window.clearInterval(timerRef.current);
+
+    if (status === "accepted") {
+      // Some com o toque imediatamente. Mesmo se a atualização do convite
+      // oscilar, a entrada na sala usa a DM autenticada e canônica.
+      const canonicalChannel = {
+        name: selected.caller_name || "Ligação privada",
+        code: `DM-${selected.conversation_id}`,
+        privateDm: true,
+        conversationId: selected.conversation_id,
+        peerUserId: selected.caller_id,
+      };
+      let response = null;
+      let respondError = null;
+      try {
+        response = await base44.functions.invoke("privateCallInvite", {
+          action: "respond",
+          invite_id: selected.id,
+          status: "accepted",
+        });
+      } catch (error) {
+        respondError = error;
       }
-      setInvites((items) => items.filter((item) => item.id !== current.id));
+
+      const code = respondError?.response?.data?.code || respondError?.code;
+      if (code === "muted") {
+        setCallError(t("mute.call_blocked"));
+        setBusy("");
+        return;
+      }
+
+      try {
+        const accepted = response?.data?.invite || selected;
+        await setChannel({
+          ...canonicalChannel,
+          name: accepted.caller_name || canonicalChannel.name,
+          code: accepted.channel_code || canonicalChannel.code,
+          conversationId: accepted.conversation_id || canonicalChannel.conversationId,
+          peerUserId: response?.data?.peer_user_id || accepted.caller_id || canonicalChannel.peerUserId,
+        });
+        setInvites((items) => items.filter((item) => item.conversation_id !== selected.conversation_id));
+        // Se o backend falhou antes mas a sala entrou, tenta marcar o convite
+        // como aceito sem bloquear a UI nem reativar o toque.
+        if (respondError) {
+          void base44.functions.invoke("privateCallInvite", {
+            action: "respond",
+            invite_id: selected.id,
+            status: "accepted",
+          }).catch(() => {});
+        }
+      } catch (joinError) {
+        const joinCode = joinError?.response?.data?.code || joinError?.code;
+        const joinMessage = joinError?.response?.data?.error || joinError?.message;
+        setCallError(joinCode === "muted" ? t("mute.call_blocked") : (joinMessage || t("dm.call_error")));
+      } finally {
+        setBusy("");
+      }
+      return;
+    }
+
+    try {
+      await base44.functions.invoke("privateCallInvite", { action: "respond", invite_id: selected.id, status });
+      setInvites((items) => items.filter((item) => item.id !== selected.id));
     } catch (error) {
-      setCallError(error?.response?.data?.code === "muted" || error?.code === "muted" ? t("mute.call_blocked") : t("dm.call_error"));
+      // Recusar deve parar o toque local mesmo se a persistência oscilar.
+      setInvites((items) => items.filter((item) => item.id !== selected.id));
+      const code = error?.response?.data?.code || error?.code;
+      const message = error?.response?.data?.error || error?.message;
+      if (code !== "invite_not_found" && code !== "invite_not_ringing") {
+        setCallError(code === "muted" ? t("mute.call_blocked") : (message || t("dm.call_error")));
+      }
     } finally {
       setBusy("");
     }

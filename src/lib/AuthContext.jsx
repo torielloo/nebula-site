@@ -132,6 +132,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const mergeUserProfile = useCallback((profilePatch) => {
+    if (!profilePatch || typeof profilePatch !== 'object') return;
+    setUser((current) => current ? { ...current, profile: { ...(current.profile || {}), ...profilePatch } } : current);
+  }, []);
+
   const navigateToLogin = () => {
     const current = window.location.pathname + window.location.search;
     window.location.assign(`/login?returnTo=${encodeURIComponent(current)}`);
@@ -149,6 +154,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkUserAuth,
+      mergeUserProfile,
       checkAppState,
       isDiscordLinked,
       isLoadingDiscordLink,

@@ -1,10 +1,8 @@
 import { base44, base44LatestFunctions } from "@/api/base44Client";
 import { safeReturnTo } from "@/lib/authReturnTo";
 
-export const DISCORD_REDIRECT_URI =
-  typeof window !== "undefined" && window.location?.origin
-    ? `${window.location.origin}/discord-callback`
-    : "https://preview--nebula-os-site-1.base44.app/discord-callback";
+export const DISCORD_REDIRECT_URI = "https://nebula-os-core-pingu.base44.app/discord-callback";
+export const DISCORD_REDIRECT_ORIGIN = "https://nebula-os-core-pingu.base44.app";
 const FLOW_KEY = "nebula_discord_flow";
 const FLOW_TTL_MS = 10 * 60 * 1000;
 
@@ -97,8 +95,14 @@ export async function startDiscordLogin(returnTo = "/") {
   if (typeof window === "undefined") throw new Error("Login do Discord indisponível neste ambiente");
 
   const state = crypto.randomUUID();
-  const redirectUri = `${window.location.origin}/discord-callback`;
-  const flow = { state, returnTo, redirectUri, createdAt: Date.now() };
+  const redirectUri = DISCORD_REDIRECT_URI;
+  const flow = {
+    state,
+    returnTo,
+    redirectUri,
+    sourceOrigin: window.location.origin,
+    createdAt: Date.now(),
+  };
   rememberFlow(flow);
 
   // No aplicativo desktop, o OAuth acontece na própria janela principal.
@@ -119,10 +123,34 @@ export async function startDiscordLogin(returnTo = "/") {
     } catch {}
   }
 
-  const onComplete = (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data?.type !== "NEBULA_DISCORD_AUTH_COMPLETE") return;
+  const cleanupMessageListeners = () => {
     window.removeEventListener("message", onComplete);
+    window.removeEventListener("message", onFlowRequest);
+  };
+
+  const onFlowRequest = (event) => {
+    if (event.data?.type !== "NEBULA_DISCORD_FLOW_REQUEST") return;
+    if (event.data?.state !== state) return;
+    if (popup && event.source !== popup) return;
+    try {
+      event.source?.postMessage(
+        { type: "NEBULA_DISCORD_FLOW_RESPONSE", state, flow },
+        event.origin
+      );
+    } catch {}
+  };
+
+  const onComplete = (event) => {
+    const validOrigin =
+      event.origin === DISCORD_REDIRECT_ORIGIN ||
+      event.origin === window.location.origin;
+    if (!validOrigin) return;
+    if (event.data?.type !== "NEBULA_DISCORD_AUTH_COMPLETE") return;
+    if (popup && event.source !== popup) return;
+    cleanupMessageListeners();
+    if (typeof event.data.access_token === "string" && event.data.access_token) {
+      try { base44.auth.setToken(event.data.access_token); } catch {}
+    }
     clearDiscordFlow();
     const destination = safeReturnTo(
       typeof event.data.returnTo === "string" ? event.data.returnTo : returnTo
@@ -130,6 +158,7 @@ export async function startDiscordLogin(returnTo = "/") {
     window.location.replace(destination || "/");
   };
   window.addEventListener("message", onComplete);
+  window.addEventListener("message", onFlowRequest);
 
   try {
     const res = await invokeDiscordAuth({
@@ -148,10 +177,10 @@ export async function startDiscordLogin(returnTo = "/") {
       return;
     }
 
-    window.removeEventListener("message", onComplete);
+    cleanupMessageListeners();
     window.location.assign(authorizeUrl);
   } catch (error) {
-    window.removeEventListener("message", onComplete);
+    cleanupMessageListeners();
     try { if (popup && !popup.closed) popup.close(); } catch {}
     throw error;
   }

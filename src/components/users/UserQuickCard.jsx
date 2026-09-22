@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Loader2, ShieldCheck, MessageCircle } from "lucide-react";
 import CopyIdButton from "@/components/CopyIdButton";
+import NitroBadgeRow from "@/components/nitro/NitroBadgeRow";
 
 export default function UserQuickCard({ userId, children, align = "start" }) {
   const navigate = useNavigate();
@@ -22,10 +23,10 @@ export default function UserQuickCard({ userId, children, align = "start" }) {
   }, [userId]);
 
   const load = async () => {
-    if (data || loading || !userId) return;
+    if (loading || !userId) return;
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("userDirectory", { action: "profile", user_id: userId });
+      const res = await base44.functions.invoke("userDirectory", { action: "profile", user_id: userId, request_nonce: Date.now() });
       setData(res.data?.profile || null);
     } finally {
       setLoading(false);
@@ -50,19 +51,29 @@ export default function UserQuickCard({ userId, children, align = "start" }) {
   return (
     <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) load(); }}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent align={align} className="w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border-border/50 bg-popover/95 p-0 shadow-2xl backdrop-blur-xl">
+      <PopoverContent
+        align={align}
+        style={{
+          borderColor: data?.accent ? `${data.accent}55` : undefined,
+          boxShadow: data?.accent ? `0 24px 70px -28px ${data.accent}66` : undefined,
+        }}
+        className="w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border-border/50 bg-popover/95 p-0 shadow-2xl backdrop-blur-xl"
+      >
         {loading ? (
           <div className="grid min-h-40 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : !data ? (
           <p className="p-5 text-sm text-muted-foreground">Não foi possível carregar este perfil.</p>
         ) : (
           <>
-            <div className="relative h-24 bg-gradient-to-br from-primary/30 via-card to-card">
+            <div
+              className="relative h-28 bg-gradient-to-br from-primary/30 via-card to-card"
+              style={data.accent || data.accent_2 ? { background: `linear-gradient(135deg, ${data.accent || "#111827"}55, ${data.accent_2 || data.accent || "#111827"}22)` } : undefined}
+            >
               {data.banner_url && <img src={data.banner_url} alt="" className="absolute inset-0 h-full w-full object-cover" />}
               <div className="absolute inset-0 bg-gradient-to-t from-popover to-transparent" />
             </div>
             <div className="-mt-7 p-4 pt-0">
-              <ProfileAvatar name={data.name} avatar={data.avatar_url} size="lg" status={data.status} />
+              <ProfileAvatar name={data.name} avatar={data.avatar_url} size="lg" status={data.status} frame={data.frame || ""} customFrameUrl={data.custom_frame_url || ""} />
               <div className="mt-2 flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-extrabold">{data.name}</p>
@@ -70,6 +81,15 @@ export default function UserQuickCard({ userId, children, align = "start" }) {
                 </div>
                 {data.discord_connected && <span title="Discord conectado" className="grid h-7 w-7 place-items-center rounded-full bg-emerald-500/10 text-emerald-400"><ShieldCheck className="h-4 w-4" /></span>}
               </div>
+              <NitroBadgeRow badges={data.nitro_badges} role={data.role} nitroActive={data.nitro_active} compact className="mt-3" />
+              {data.custom_status && (
+                <div
+                  className="mt-3 rounded-xl border px-3 py-2 text-xs font-semibold"
+                  style={{ borderColor: data.accent ? `${data.accent}44` : undefined, background: data.accent ? `${data.accent}12` : undefined }}
+                >
+                  {data.custom_status}
+                </div>
+              )}
               {data.bio && <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-muted-foreground">{data.bio}</p>}
               {data.internal_id && (
                 <div className="mt-3 grid gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-[11px]">
@@ -84,7 +104,14 @@ export default function UserQuickCard({ userId, children, align = "start" }) {
                 </div>
               )}
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {data.role && data.role !== "user" && <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase text-primary">{data.role}</span>}
+                {data.role && data.role !== "user" && (
+                  <span
+                    className="rounded-full px-2 py-1 text-[10px] font-bold uppercase"
+                    style={{ background: data.accent ? `${data.accent}18` : undefined, color: data.accent || undefined }}
+                  >
+                    {data.role}
+                  </span>
+                )}
                 {(data.badges || []).slice(0, 4).map((b) => <span key={b} className="rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold">{b}</span>)}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2">

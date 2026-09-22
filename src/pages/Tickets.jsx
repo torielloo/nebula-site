@@ -69,6 +69,9 @@ export default function Tickets() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [closedCollapsed, setClosedCollapsed] = useState(() => {
+    try { return localStorage.getItem("nebula:tickets-closed-collapsed") === "1"; } catch { return false; }
+  });
   const [form, setForm] = useState(EMPTY_FORM);
   const [loadError, setLoadError] = useState("");
   const [statusBusy, setStatusBusy] = useState(false);
@@ -223,13 +226,15 @@ export default function Tickets() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const hideClosed = closedCollapsed && statusFilter === "all" && !q;
     return (tickets || []).filter((tk) => {
       const st = tk.status || "novo";
+      if (hideClosed && st === "fechado") return false;
       if (statusFilter !== "all" && st !== statusFilter) return false;
       if (q && !`${tk.subject} ${tk.description || ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [tickets, search, statusFilter]);
+  }, [tickets, search, statusFilter, closedCollapsed]);
 
   const submit = async () => {
     if (!form.subject.trim() || !form.description.trim() || saving) return;
@@ -424,6 +429,24 @@ export default function Tickets() {
                 className="h-9 rounded-xl border-border/40 bg-transparent pl-9 text-xs"
               />
             </div>
+            {stats.closed >= 3 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl px-3 text-xs"
+                onClick={() => {
+                  setClosedCollapsed((current) => {
+                    const next = !current;
+                    try { localStorage.setItem("nebula:tickets-closed-collapsed", next ? "1" : "0"); } catch {}
+                    return next;
+                  });
+                }}
+              >
+                <Archive className="mr-2 h-3.5 w-3.5" />
+                {closedCollapsed ? `Mostrar fechados (${stats.closed})` : `Recolher fechados (${stats.closed})`}
+              </Button>
+            )}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-9 w-full rounded-xl text-xs sm:w-44">
                 <SelectValue />

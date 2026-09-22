@@ -17,6 +17,7 @@ const ALLOWED_REDIRECT_HOSTS = new Set([
   'nebula-os-core-pingu.bubbly-alder-3685.chatgpt.site',
 ]);
 const REDIRECT_PATH = '/discord-callback';
+const CANONICAL_REDIRECT_URI = 'https://nebula-os-core-pingu.base44.app/discord-callback';
 
 function validRedirect(value, requestOrigin = '') {
   if (typeof value !== 'string' || value.length > 350) return false;
@@ -164,27 +165,35 @@ export default async function(req) {
     const sealSecret = clientSecret;
 
     if (action === 'start') {
-      const redirectUri = body.redirect_uri;
+      const requestedRedirectUri = body.redirect_uri;
       const state = body.state;
-      if (!validRedirect(redirectUri, requestOrigin) || typeof state !== 'string' || !/^[a-zA-Z0-9_-]{20,128}$/.test(state)) {
+      if (!validRedirect(requestedRedirectUri, requestOrigin) || typeof state !== 'string' || !/^[a-zA-Z0-9_-]{20,128}$/.test(state)) {
         return Response.json({ error: 'Autorização inválida' }, { status: 400 });
       }
       const authorizeUrl = buildDiscordAuthorizeUrl({
         clientId,
-        redirectUri,
+        redirectUri: CANONICAL_REDIRECT_URI,
         scopes: ['identify', 'email'],
         state,
       });
-      return Response.json({ authorize_url: authorizeUrl });
+      return Response.json({
+        authorize_url: authorizeUrl,
+        redirect_uri: CANONICAL_REDIRECT_URI,
+      });
     }
 
     if (action === 'exchange') {
       const code = body.code;
-      const redirectUri = body.redirect_uri;
-      if (!validRedirect(redirectUri, requestOrigin) || typeof code !== 'string' || !/^[a-zA-Z0-9_-]{10,300}$/.test(code)) {
+      const requestedRedirectUri = body.redirect_uri;
+      if (!validRedirect(requestedRedirectUri, requestOrigin) || typeof code !== 'string' || !/^[a-zA-Z0-9_-]{10,300}$/.test(code)) {
         return Response.json({ error: 'Autorização inválida' }, { status: 400 });
       }
-      const profile = await exchangeDiscordCode({ clientId, clientSecret, code, redirectUri });
+      const profile = await exchangeDiscordCode({
+        clientId,
+        clientSecret,
+        code,
+        redirectUri: CANONICAL_REDIRECT_URI,
+      });
       // Prova criptográfica da identidade Discord, exigida depois no "link"
       const linkToken = await makeLinkToken(clientSecret, profile.discord_id);
 

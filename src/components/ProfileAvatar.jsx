@@ -30,12 +30,13 @@ export default function ProfileAvatar({
   status,
   frame,
   customFrameUrl = "",
+  fit = "cover",
   className,
 }) {
   const initial = ((name || "?").trim().charAt(0) || "?").toUpperCase();
 
   return (
-    <div className={cn("relative shrink-0", className)}>
+    <div className={cn("relative inline-block h-fit w-fit shrink-0 align-top leading-none", className)}>
       <NitroAvatarFrame frame={frame} customFrameUrl={customFrameUrl}>
         <div
           className={cn(
@@ -49,7 +50,7 @@ export default function ProfileAvatar({
               alt={name || "Avatar"}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover"
+              className={cn("h-full w-full", fit === "contain" ? "object-contain object-center" : "object-cover object-center")}
             />
           ) : (
             initial

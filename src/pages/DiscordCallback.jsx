@@ -53,15 +53,57 @@ const linkDiscordAccount = async (discord, password) => {
   } catch {}
 };
 
-const completeDiscordAuth = (destination) => {
+const requestFlowFromOpener = (state) =>
+  new Promise((resolve) => {
+    if (!state || !window.opener || window.opener.closed) {
+      resolve(null);
+      return;
+    }
+
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("message", onMessage);
+      window.clearTimeout(timer);
+      resolve(value || null);
+    };
+    const onMessage = (event) => {
+      if (event.source !== window.opener) return;
+      if (event.data?.type !== "NEBULA_DISCORD_FLOW_RESPONSE") return;
+      if (event.data?.state !== state) return;
+      finish(event.data.flow);
+    };
+    const timer = window.setTimeout(() => finish(null), 1800);
+    window.addEventListener("message", onMessage);
+    try {
+      window.opener.postMessage(
+        { type: "NEBULA_DISCORD_FLOW_REQUEST", state },
+        "*"
+      );
+    } catch {
+      finish(null);
+    }
+  });
+
+const completeDiscordAuth = (destination, accessToken = "", sourceOrigin = "") => {
   clearDiscordFlow();
   try {
     if (window.opener && !window.opener.closed) {
+      let targetOrigin = window.location.origin;
+      try {
+        const candidate = new URL(sourceOrigin || window.location.origin);
+        if (/^https?:$/.test(candidate.protocol)) targetOrigin = candidate.origin;
+      } catch {}
       window.opener.postMessage(
-        { type: "NEBULA_DISCORD_AUTH_COMPLETE", returnTo: destination || "/" },
-        window.location.origin
+        {
+          type: "NEBULA_DISCORD_AUTH_COMPLETE",
+          returnTo: destination || "/",
+          access_token: accessToken || "",
+        },
+        targetOrigin
       );
-      window.setTimeout(() => window.close(), 60);
+      window.setTimeout(() => window.close(), 80);
       return;
     }
   } catch {}
@@ -79,62 +121,96 @@ export default function DiscordCallback() {
   const [returnTo, setReturnTo] = useState("/");
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-    const state = urlParams.get("state");
-    const flowData = readDiscordFlow(state || "");
-    window.history.replaceState({}, "", "/discord-callback");
+    let cancelled = false;
 
-    if (!code || !flowData || state !== flowData.state) {
-      setStatus("error");
-      return;
-    }
-    const destination = safeReturnTo(flowData.returnTo || "/");
-    setReturnTo(destination);
+    const run = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code");
+      const state = urlParams.get("state");
+      let flowData = readDiscordFlow(state || "");
 
-    invokeDiscordAuth({
+      if (!flowData && state) {
+        flowData = await requestFlowFromOpener(state);
+      }
+
+      window.history.replaceState({}, "", "/discord-callback");
+
+      if (cancelled) return;
+      if (!code || !flowData || state !== flowData.state) {
+        setStatus("error");
+        return;
+      }
+
+      const destination = safeReturnTo(flowData.returnTo || "/");
+      setReturnTo(destination);
+
+      invokeDiscordAuth({
         action: "exchange",
         code,
-        redirect_uri: flowData.redirectUri || DISCORD_REDIRECT_URI,
+        redirect_uri: DISCORD_REDIRECT_URI,
       })
-      .then((res) => {
-        const d = res.data;
-        const discord = {
-          discord_id: d.discord_id,
-          link_token: d.link_token,
-          discord_username: d.discord_username,
-          discord_handle: d.discord_handle,
-          discord_avatar_url: d.discord_avatar_url,
-          discord_banner_url: d.discord_banner_url || "",
-          discord_accent_color: d.discord_accent_color || "",
-        };
-        if (d.status === "login" && d.access_token) {
-          // Login resolvido no servidor: apenas o token de sessão chega aqui.
-          base44.auth.setToken(d.access_token);
-          base44.auth
-            .me()
-            .then(() => syncDiscordProfile(discord))
-            .then(() => {
-              completeDiscordAuth(destination);
-            })
-            .catch(() => setStatus("error"));
-        } else if (d.status === "register") {
-          // Conta criada no servidor: confirma pelo código OTP do email —
-          // a senha interna nunca sai do servidor.
-          setFlow({ mode: "otp", email: d.email, discord });
-          setStatus("otp");
-        } else if (d.status === "exists") {
-          setFlow({ mode: "exists", email: d.email, discord });
-          setFormEmail(d.email || "");
-          setStatus("form");
-        } else {
-          setFlow({ mode: "manual", email: "", discord });
-          setStatus("form");
-        }
-      })
-      .catch(() => {
-        setStatus("error");
-      });
+        .then((res) => {
+          const d = res.data;
+          const discord = {
+            discord_id: d.discord_id,
+            link_token: d.link_token,
+            discord_username: d.discord_username,
+            discord_handle: d.discord_handle,
+            discord_avatar_url: d.discord_avatar_url,
+            discord_banner_url: d.discord_banner_url || "",
+            discord_accent_color: d.discord_accent_color || "",
+          };
+          if (d.status === "login" && d.access_token) {
+            base44.auth.setToken(d.access_token);
+            base44.auth
+              .me()
+              .then(() => syncDiscordProfile(discord))
+              .then(() => {
+                completeDiscordAuth(
+                  destination,
+                  d.access_token,
+                  flowData.sourceOrigin || ""
+                );
+              })
+              .catch(() => {
+                if (!cancelled) setStatus("error");
+              });
+          } else if (d.status === "register") {
+            setFlow({
+              mode: "otp",
+              email: d.email,
+              discord,
+              sourceOrigin: flowData.sourceOrigin || "",
+            });
+            setStatus("otp");
+          } else if (d.status === "exists") {
+            setFlow({
+              mode: "exists",
+              email: d.email,
+              discord,
+              sourceOrigin: flowData.sourceOrigin || "",
+            });
+            setFormEmail(d.email || "");
+            setStatus("form");
+          } else {
+            setFlow({
+              mode: "manual",
+              email: "",
+              discord,
+              sourceOrigin: flowData.sourceOrigin || "",
+            });
+            setStatus("form");
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setStatus("error");
+        });
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleForm = async (e) => {
@@ -147,17 +223,24 @@ export default function DiscordCallback() {
     }
     setLoading(true);
     try {
+      let loginResult = null;
       try {
-        await base44.auth.loginViaEmailPassword(email, formPassword);
+        loginResult = await base44.auth.loginViaEmailPassword(email, formPassword);
       } catch (loginErr) {
         if (flow?.mode === "exists") throw loginErr;
         await base44.auth.register({ email, password: formPassword });
-        await base44.auth.loginViaEmailPassword(email, formPassword);
+        loginResult = await base44.auth.loginViaEmailPassword(email, formPassword);
       }
       await base44.auth.me();
       await syncDiscordProfile(flow.discord);
       await linkDiscordAccount(flow.discord, formPassword);
-      completeDiscordAuth(returnTo);
+      const loginToken =
+        loginResult?.access_token ||
+        loginResult?.data?.access_token ||
+        loginResult?.token?.access_token ||
+        loginResult?.data?.token?.access_token ||
+        "";
+      completeDiscordAuth(returnTo, loginToken, flow?.sourceOrigin || "");
     } catch (err) {
       setError(err.message || "Email ou senha inválidos");
     } finally {
@@ -176,7 +259,13 @@ export default function DiscordCallback() {
       await base44.auth.me();
       await syncDiscordProfile(flow.discord);
       // A vinculação já foi criada no servidor durante o cadastro.
-      completeDiscordAuth(returnTo);
+      const verifiedToken =
+        result?.access_token ||
+        result?.data?.access_token ||
+        result?.token?.access_token ||
+        result?.data?.token?.access_token ||
+        "";
+      completeDiscordAuth(returnTo, verifiedToken, flow?.sourceOrigin || "");
     } catch (err) {
       setError(err.message || "Código de verificação inválido");
     } finally {

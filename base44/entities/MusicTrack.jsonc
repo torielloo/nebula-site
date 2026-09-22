@@ -44,19 +44,6 @@
       "maximum": 999,
       "default": 0
     },
-    "lyrics": {
-      "type": "string",
-      "maxLength": 20000
-    },
-    "lyrics_source": {
-      "type": "string",
-      "enum": [
-        "manual",
-        "ai_original",
-        "none"
-      ],
-      "default": "none"
-    },
     "bass_profile": {
       "type": "object",
       "properties": {

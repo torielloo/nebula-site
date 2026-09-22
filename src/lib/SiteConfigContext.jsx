@@ -5,7 +5,7 @@ const DEFAULT_SITE_CONFIG = {
   brand: {
     name: "NÉBULA OS",
     tagline: "SISTEMA CONECTADO",
-    logo_url: "https://media.base44.com/images/public/6aa87196309472108abb65fb/8eaf849a6_NEBULAV2.png",
+    logo_url: "/brand/nebula-isotipo.svg",
   },
   announcement: { enabled: false, text: "" },
   audio: {
@@ -15,6 +15,7 @@ const DEFAULT_SITE_CONFIG = {
     default_volume: 0.08,
   },
   nav: {},
+  banners: {},
   pages: [],
 };
 
@@ -31,6 +32,7 @@ const mergeConfig = (value) => ({
   announcement: { ...DEFAULT_SITE_CONFIG.announcement, ...((value && value.announcement) || {}) },
   audio: { ...DEFAULT_SITE_CONFIG.audio, ...((value && value.audio) || {}) },
   nav: { ...DEFAULT_SITE_CONFIG.nav, ...((value && value.nav) || {}) },
+  banners: { ...DEFAULT_SITE_CONFIG.banners, ...((value && value.banners) || {}) },
   pages: Array.isArray(value?.pages) ? value.pages : [],
 });
 

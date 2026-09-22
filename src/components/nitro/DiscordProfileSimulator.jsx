@@ -1,67 +1,46 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { BadgeCheck, Check, Clipboard, Download, Loader2, Save, Sparkles, Upload } from "lucide-react";
+import { Check, Clipboard, Code2, Gem, HeartHandshake, Loader2, LockKeyhole, Save, ShieldCheck, Upload, UsersRound } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
+import { hasRole } from "@/lib/roles";
 
 const BADGES = [
-  ["hypesquad", "HypeSquad"],
-  ["booster", "Booster"],
-  ["developer", "Active Developer"],
-  ["supporter", "Early Supporter"],
+  { id: "hypesquad", label: "HypeSquad", Icon: ShieldCheck, cls: "text-fuchsia-300 bg-fuchsia-500/15 border-fuchsia-400/25" },
+  { id: "booster", label: "Booster", Icon: Gem, cls: "text-pink-300 bg-pink-500/15 border-pink-400/25" },
+  { id: "developer", label: "Active Developer", Icon: Code2, cls: "text-cyan-300 bg-cyan-500/15 border-cyan-400/25" },
+  { id: "supporter", label: "Early Supporter", Icon: HeartHandshake, cls: "text-amber-300 bg-amber-500/15 border-amber-400/25" },
+  { id: "staff", label: "Nébula Staff", Icon: UsersRound, cls: "text-emerald-300 bg-emerald-500/15 border-emerald-400/25" },
 ];
 
 const MAX_AVATAR = 8 * 1024 * 1024;
 const MAX_BANNER = 20 * 1024 * 1024;
+const MAX_PRONOUNS = 20;
+const MAX_STATUS = 40;
 
 function safeObjectUrl(file) {
   return file ? URL.createObjectURL(file) : "";
 }
 
-function downloadCanvas(dataUrl, filename) {
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+function normalizeMultilineText(value) {
+  return String(value || "").replace(/\\n/g, "\n");
 }
 
-async function imageToCanvasDataUrl(source, width, height, type = "image/png", quality = 0.92) {
-  if (!source) return "";
-  const image = new Image();
-  image.crossOrigin = "anonymous";
-  const loaded = new Promise((resolve, reject) => {
-    image.onload = resolve;
-    image.onerror = reject;
-  });
-  image.src = source;
-  await loaded;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas indisponível.");
-  const scale = Math.max(width / image.width, height / image.height);
-  const drawW = image.width * scale;
-  const drawH = image.height * scale;
-  ctx.drawImage(image, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
-  return canvas.toDataURL(type, quality);
-}
-
-export default function DiscordProfileSimulator({ profile, active, saving, save, name, handle }) {
-  const [displayName, setDisplayName] = useState(name || "Você");
-  const [userHandle, setUserHandle] = useState(handle || profile.discord_handle || profile.discord_username || "usuario");
-  const [pronouns, setPronouns] = useState(profile.nitro_pronouns || "");
-  const [statusText, setStatusText] = useState(profile.nitro_status_text || "Explorando o Nébula");
-  const [about, setAbout] = useState(profile.nitro_about || profile.bio || "");
+export default function DiscordProfileSimulator({ user, profile, active, saving, save, name }) {
+  const { t } = useI18n();
+  const [displayName, setDisplayName] = useState(profile.display_name || name || "Você");
+  const discordHandle = String(profile.discord_handle || profile.discord_username || "usuario").replace(/^@/, "").slice(0, 32);
+  const [pronouns, setPronouns] = useState((profile.nitro_pronouns || "").slice(0, MAX_PRONOUNS));
+  const [statusText, setStatusText] = useState((profile.nitro_status_text || "Explorando o Nébula").slice(0, MAX_STATUS));
+  const [about, setAbout] = useState(normalizeMultilineText(profile.nitro_about || profile.bio || ""));
   const [primary, setPrimary] = useState(profile.accent || "#5865F2");
   const [secondary, setSecondary] = useState(profile.accent_2 || "#EB459E");
-  const [badges, setBadges] = useState(() => new Set(["booster"]));
+  const [badges, setBadges] = useState(() => new Set(Array.isArray(profile.nitro_badges) ? profile.nitro_badges : []));
   const [avatarFile, setAvatarFile] = useState(null);
   const [bannerFile, setBannerFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url || "");
@@ -93,17 +72,41 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
 
   const data = useMemo(() => ({
     displayName: displayName.trim().slice(0, 64),
-    handle: userHandle.trim().replace(/^@/, "").slice(0, 32),
-    pronouns: pronouns.trim().slice(0, 40),
-    statusText: statusText.trim().slice(0, 80),
+    handle: discordHandle,
+    pronouns: pronouns.trim().slice(0, MAX_PRONOUNS),
+    statusText: statusText.trim().slice(0, MAX_STATUS),
     about: about.slice(0, 300),
     primary,
     secondary,
     badges: [...badges],
     frame,
-  }), [displayName, userHandle, pronouns, statusText, about, primary, secondary, badges, frame]);
+  }), [displayName, discordHandle, pronouns, statusText, about, primary, secondary, badges, frame]);
+
+  const badgePermission = (id) => {
+    if (id === "developer") return { allowed: hasRole(user, "dev"), requirement: "DEV ou superior" };
+    if (id === "supporter") return { allowed: active === true, requirement: "Nitro ativo" };
+    if (id === "staff") return { allowed: hasRole(user, "support"), requirement: "Membro da equipe Nébula" };
+    if (id === "booster") return { allowed: active === true, requirement: "Nitro ativo" };
+    if (id === "hypesquad") return { allowed: hasRole(user, "moderator"), requirement: "Staff/Moderador ou superior" };
+    return { allowed: false, requirement: "Sem permissão" };
+  };
+
+  useEffect(() => {
+    const persisted = Array.isArray(profile.nitro_badges) ? profile.nitro_badges : [];
+    setBadges(new Set(persisted.filter((id) => badgePermission(id).allowed)));
+  }, [profile.nitro_badges, user?.role, active]);
+
+  useEffect(() => {
+    setFrame(profile.frame || "");
+  }, [profile.frame]);
+
+  useEffect(() => {
+    if (profile.accent) setPrimary(profile.accent);
+    if (profile.accent_2) setSecondary(profile.accent_2);
+  }, [profile.accent, profile.accent_2]);
 
   const toggleBadge = (id) => {
+    if (!badgePermission(id).allowed) return;
     setBadges((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -150,24 +153,6 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
     }
   };
 
-  const exportAsset = async (kind) => {
-    setError("");
-    try {
-      if (kind === "avatar") {
-        const dataUrl = await imageToCanvasDataUrl(avatarPreview, 128, 128);
-        if (!dataUrl) throw new Error("Escolha um avatar primeiro.");
-        downloadCanvas(dataUrl, "nebula-avatar-128x128.png");
-      } else {
-        if (bannerFile?.type?.startsWith("video/")) throw new Error("Exportação de frame estático não se aplica a vídeo. Use o arquivo original.");
-        const dataUrl = await imageToCanvasDataUrl(bannerPreview, 680, 240, "image/png");
-        if (!dataUrl) throw new Error("Escolha um banner primeiro.");
-        downloadCanvas(dataUrl, "nebula-banner-680x240.png");
-      }
-    } catch (err) {
-      setError(err?.message || "Falha ao exportar.");
-    }
-  };
-
   const applyProfile = async () => {
     if (!active || busy || saving) return;
     setBusy(true);
@@ -188,17 +173,17 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
       }
 
       const ok = await save({
+        display_name: data.displayName,
         avatar_url: avatarUrl,
         banner_url: bannerUrl,
         frame,
-        accent: primary,
-        accent_2: secondary,
         nitro_pronouns: data.pronouns,
         nitro_status_text: data.statusText,
         nitro_about: data.about,
-        name_gradient_a: primary,
-        name_gradient_b: secondary,
-        cursor_effect: profile.cursor_effect || "none",
+        nitro_badges: data.badges.filter((badge) => badge !== "staff"),
+        accent: data.primary,
+        accent_2: data.secondary,
+        accent_source: "profile",
       });
       if (!ok) throw new Error("Não foi possível aplicar a personalização.");
     } catch (err) {
@@ -208,31 +193,15 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
     }
   };
 
-  const syncDiscord = () => {
-    setDisplayName(profile.discord_display_name || profile.discord_username || name || "Você");
-    setUserHandle(profile.discord_handle || profile.discord_username || handle || "usuario");
-    setAvatarFile(null);
-    setAvatarPreview(profile.discord_avatar_url || profile.avatar_url || "");
-    if (profile.banner_url) setBannerPreview(profile.banner_url);
-    if (profile.accent) setPrimary(profile.accent);
-    if (profile.accent_2) setSecondary(profile.accent_2);
-  };
-
   return (
     <section id="simulador-perfil" className="scroll-mt-24 overflow-hidden rounded-3xl border border-border/40 bg-card/35">
       <div className="border-b border-border/35 p-5 md:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Live Profile Sandbox</p>
-            <h2 className="mt-1 font-heading text-xl font-extrabold">Simulador de perfil em tempo real</h2>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
-              Teste avatar, banner, cores, bio e molduras antes de aplicar ao Nébula. As badges abaixo são apenas uma prévia visual e não concedem badges oficiais.
-            </p>
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={syncDiscord}>
-            <Sparkles className="mr-2 h-3.5 w-3.5" />
-            Sincronizar dados do Discord
-          </Button>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Live Profile Sandbox</p>
+          <h2 className="mt-1 font-heading text-xl font-extrabold">Simulador de perfil em tempo real</h2>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
+            Teste avatar, banner, cores, bio e molduras antes de aplicar ao Nébula. As badges de prévia respeitam seu cargo e seu status Nitro.
+          </p>
         </div>
       </div>
 
@@ -243,17 +212,20 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
               <span className="text-[11px] font-bold text-muted-foreground">Nome</span>
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value.slice(0, 64))} />
             </label>
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-muted-foreground">{t("nitro.profile.discord_handle")}</span>
+              <div className="flex h-10 items-center rounded-md border border-border/50 bg-background/25 px-3 text-sm font-semibold text-muted-foreground">
+                @{discordHandle}
+              </div>
+              <p className="text-[10px] leading-4 text-muted-foreground">{t("nitro.profile.discord_handle_hint")}</p>
+            </div>
             <label className="space-y-1.5">
-              <span className="text-[11px] font-bold text-muted-foreground">Handle</span>
-              <Input value={userHandle} onChange={(e) => setUserHandle(e.target.value.slice(0, 32))} />
+              <span className="flex items-center justify-between gap-2 text-[11px] font-bold text-muted-foreground"><span>Pronomes</span><span>{pronouns.length}/{MAX_PRONOUNS}</span></span>
+              <Input maxLength={MAX_PRONOUNS} value={pronouns} onChange={(e) => setPronouns(e.target.value.slice(0, MAX_PRONOUNS))} placeholder="ele/dele" />
             </label>
             <label className="space-y-1.5">
-              <span className="text-[11px] font-bold text-muted-foreground">Pronomes</span>
-              <Input value={pronouns} onChange={(e) => setPronouns(e.target.value.slice(0, 40))} placeholder="ele/dele" />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-bold text-muted-foreground">Status personalizado</span>
-              <Input value={statusText} onChange={(e) => setStatusText(e.target.value.slice(0, 80))} />
+              <span className="flex items-center justify-between gap-2 text-[11px] font-bold text-muted-foreground"><span>Status personalizado</span><span>{statusText.length}/{MAX_STATUS}</span></span>
+              <Input maxLength={MAX_STATUS} value={statusText} onChange={(e) => setStatusText(e.target.value.slice(0, MAX_STATUS))} />
             </label>
           </div>
 
@@ -276,23 +248,23 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="rounded-2xl border border-border/40 bg-background/30 p-3">
-              <span className="text-[11px] font-bold text-muted-foreground">Primary</span>
+              <span className="text-[11px] font-bold text-muted-foreground">Cor principal</span>
               <input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="mt-2 h-10 w-full rounded-lg border border-border/40 bg-transparent p-1" />
             </label>
             <label className="rounded-2xl border border-border/40 bg-background/30 p-3">
-              <span className="text-[11px] font-bold text-muted-foreground">Accent</span>
+              <span className="text-[11px] font-bold text-muted-foreground">Cor secundária</span>
               <input type="color" value={secondary} onChange={(e) => setSecondary(e.target.value)} className="mt-2 h-10 w-full rounded-lg border border-border/40 bg-transparent p-1" />
             </label>
           </div>
 
           <label className="block space-y-1.5">
-            <span className="text-[11px] font-bold text-muted-foreground">About Me · Markdown básico</span>
+            <span className="text-[11px] font-bold text-muted-foreground">Sobre mim · Markdown básico</span>
             <textarea
               value={about}
               onChange={(e) => setAbout(e.target.value.slice(0, 300))}
               rows={5}
               className="w-full resize-y rounded-2xl border border-border/50 bg-background/35 px-3 py-2 text-sm outline-none focus:border-primary/50"
-              placeholder="**Sobre mim**\nAdicione links e formatação."
+              placeholder={"**Sobre mim**\nAdicione links e formatação."}
             />
             <span className="block text-right text-[10px] text-muted-foreground">{about.length}/300</span>
           </label>
@@ -300,12 +272,18 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
           <div className="rounded-2xl border border-border/40 bg-background/30 p-4">
             <p className="text-xs font-extrabold">Badges de prévia</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {BADGES.map(([id, label]) => (
-                <div key={id} className="flex items-center justify-between rounded-xl border border-border/35 px-3 py-2">
-                  <span className="flex items-center gap-2 text-xs font-semibold"><BadgeCheck className="h-3.5 w-3.5 text-primary" />{label}</span>
-                  <Switch checked={badges.has(id)} onCheckedChange={() => toggleBadge(id)} />
-                </div>
-              ))}
+              {BADGES.map(({ id, label, Icon, cls }) => {
+                const permission = badgePermission(id);
+                return (
+                  <div key={id} className={cn("flex items-center justify-between gap-3 rounded-xl border px-3 py-2", permission.allowed ? "border-border/35" : "border-border/20 opacity-60")}>
+                    <span className="flex min-w-0 items-center gap-2 text-xs font-semibold">
+                      <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full border", cls)}><Icon className="h-3.5 w-3.5" /></span>
+                      <span className="min-w-0"><span className="block truncate">{label}</span>{!permission.allowed && <span className="mt-0.5 flex items-center gap-1 text-[9px] font-medium text-muted-foreground"><LockKeyhole className="h-2.5 w-2.5" />{permission.requirement}</span>}</span>
+                    </span>
+                    <Switch disabled={!permission.allowed || id === "staff"} checked={id === "staff" ? permission.allowed : (permission.allowed && badges.has(id))} onCheckedChange={() => toggleBadge(id)} />
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -313,12 +291,6 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
             <Button type="button" variant="outline" onClick={copyJson}>
               {copyDone ? <Check className="mr-2 h-4 w-4" /> : <Clipboard className="mr-2 h-4 w-4" />}
               {copyDone ? "Copiado" : "Exportar configurações"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => void exportAsset("avatar")}>
-              <Download className="mr-2 h-4 w-4" /> Avatar 128×128
-            </Button>
-            <Button type="button" variant="outline" onClick={() => void exportAsset("banner")}>
-              <Download className="mr-2 h-4 w-4" /> Banner 680×240
             </Button>
             <Button type="button" disabled={!active || busy || saving} onClick={() => void applyProfile()}>
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -354,15 +326,20 @@ export default function DiscordProfileSimulator({ profile, active, saving, save,
                   <h3 className="text-xl font-black text-white">{displayName || "Seu nome"}</h3>
                   {profile.custom_tag && <span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white/80">{profile.custom_tag}</span>}
                 </div>
-                <p className="mt-0.5 text-xs font-semibold text-white/65">@{userHandle.replace(/^@/, "") || "usuario"}</p>
+                <p className="mt-0.5 text-xs font-semibold text-white/65">@{discordHandle}</p>
                 {pronouns && <p className="mt-2 text-xs text-white/55">{pronouns}</p>}
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {[...badges].map((badge) => (
-                    <span key={badge} className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-white/80" title={BADGES.find(([id]) => id === badge)?.[1] || badge}>
-                      <BadgeCheck className="h-3.5 w-3.5" />
-                    </span>
-                  ))}
+                  {[...badges, ...(hasRole(user, "support") ? ["staff"] : [])].filter((badge, index, all) => all.indexOf(badge) === index).map((badge) => {
+                    const meta = BADGES.find((item) => item.id === badge);
+                    if (!meta) return null;
+                    const Icon = meta.Icon;
+                    return (
+                      <span key={badge} className={cn("grid h-7 w-7 place-items-center rounded-full border", meta.cls)} title={meta.label}>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {statusText && (

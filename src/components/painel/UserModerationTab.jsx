@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import UserPicker from "@/components/users/UserPicker";
 import ProfileAvatar from "@/components/ProfileAvatar";
+import NitroBadgeRow from "@/components/nitro/NitroBadgeRow";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Flag, Loader2, Monitor, RefreshCw, Search, ShieldAlert, ShieldCheck, UserRoundSearch } from "lucide-react";
 import CopyIdButton from "@/components/CopyIdButton";
@@ -141,10 +142,16 @@ export default function UserModerationTab() {
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <ProfileAvatar name={profile.name} avatar={profile.avatar_url} size="lg" status={profile.status} />
+                <ProfileAvatar name={profile.name} avatar={profile.avatar_url} size="lg" status={profile.status} frame={profile.frame || ""} customFrameUrl={profile.custom_frame_url || ""} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-heading text-xl font-extrabold">{profile.name}</h3><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase text-primary">{profile.role}</span></div>
                   <p className="mt-1 text-xs text-muted-foreground">{profile.username ? `@${profile.username}` : t("usermod.no_public_username")}</p>
+                  <NitroBadgeRow badges={profile.nitro_badges} role={profile.role} nitroActive={profile.nitro_active} compact className="mt-2" />
+                  {(profile.nitro_status_text || profile.custom_status) && (
+                    <div className="mt-2 inline-flex max-w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold">
+                      <span className="truncate">{profile.nitro_status_text || profile.custom_status}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="outline" size="sm" className="rounded-full"><Link to={`/user/${profile.id}`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" />{t("usermod.open_profile")}</Link></Button>

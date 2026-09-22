@@ -9,6 +9,7 @@ import ReportUserDialog from "@/components/users/ReportUserDialog";
 import { isModerator } from "@/lib/roles";
 import { BadgeCheck, Flag, Loader2, MessageCircle, Monitor, ShieldCheck } from "lucide-react";
 import CopyIdButton from "@/components/CopyIdButton";
+import NitroBadgeRow from "@/components/nitro/NitroBadgeRow";
 import { useI18n } from "@/lib/i18n";
 
 export default function UserProfile() {
@@ -26,7 +27,7 @@ export default function UserProfile() {
     setLoading(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("userDirectory", { action: "profile", user_id: id });
+      const res = await base44.functions.invoke("userDirectory", { action: "profile", user_id: id, request_nonce: Date.now() });
       setProfile(res.data?.profile || null);
     } catch (e) {
       setError(e?.response?.data?.error || t("profile.load_error"));
@@ -60,8 +61,17 @@ export default function UserProfile() {
   const own = user?.id === profile.id;
   return (
     <PageShell className="mx-auto max-w-5xl" label={t("profile.label")} title={profile.name} subtitle={profile.username ? `@${profile.username}` : t("profile.nebula_user", { role: profile.role })}>
-      <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/50 shadow-[0_28px_90px_-45px_rgba(0,0,0,0.95)]">
-        <div className="relative h-44 bg-gradient-to-br from-primary/35 via-card to-background md:h-60">
+      <div
+        className="overflow-hidden rounded-3xl border border-border/40 bg-card/50 shadow-[0_28px_90px_-45px_rgba(0,0,0,0.95)]"
+        style={{
+          borderColor: profile.accent ? `${profile.accent}55` : undefined,
+          boxShadow: profile.accent ? `0 28px 90px -45px ${profile.accent}66` : undefined,
+        }}
+      >
+        <div
+          className="relative h-44 bg-gradient-to-br from-primary/35 via-card to-background md:h-60"
+          style={profile.accent || profile.accent_2 ? { background: `linear-gradient(135deg, ${profile.accent || "#111827"}55, ${profile.accent_2 || profile.accent || "#111827"}22)` } : undefined}
+        >
           {profile.banner_url && <img src={profile.banner_url} alt="Banner do perfil" className="absolute inset-0 h-full w-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
         </div>
@@ -70,19 +80,17 @@ export default function UserProfile() {
             <ProfileAvatar name={profile.name} avatar={profile.avatar_url} status={profile.status} frame={profile.frame} customFrameUrl={profile.custom_frame_url} size="xl" />
             <div className="min-w-0 flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1
-                  className="truncate font-heading text-2xl font-extrabold md:text-3xl"
-                  style={profile.name_gradient_a && profile.name_gradient_b ? {
-                    backgroundImage: `linear-gradient(90deg, ${profile.name_gradient_a}, ${profile.name_gradient_b})`,
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                  } : undefined}
-                >{profile.name}</h1>
+                <h1 className="truncate font-heading text-2xl font-extrabold text-foreground md:text-3xl">{profile.name}</h1>
                 {profile.custom_tag && <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">{profile.custom_tag}</span>}
                 {profile.discord_connected && <span title={t("profile.discord_connected")} className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-400"><ShieldCheck className="h-3 w-3" />Discord</span>}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{profile.username ? `@${profile.username}` : profile.id}</p>
+              <NitroBadgeRow badges={profile.nitro_badges} role={profile.role} nitroActive={profile.nitro_active} compact className="mt-2" />
+              {(profile.nitro_status_text || profile.custom_status) && (
+                <div className="mt-2 inline-flex max-w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-foreground/90">
+                  <span className="truncate">{profile.nitro_status_text || profile.custom_status}</span>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 pb-1">
               {!own && <Button asChild size="sm" className="rounded-full"><Link to={`/mensagens?user=${profile.id}`}><MessageCircle className="mr-1.5 h-3.5 w-3.5" />{t("profile.message")}</Link></Button>}
@@ -94,14 +102,13 @@ export default function UserProfile() {
           {screeningNotice && <p className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-200">{screeningNotice}</p>}
           {profile.bio && <p className="mt-5 max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>}
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase text-primary">{profile.role}</span>
+            <span className="rounded-full px-3 py-1 text-xs font-bold uppercase" style={{ background: profile.accent ? `${profile.accent}18` : undefined, color: profile.accent || undefined }}>{profile.role}</span>
             {(profile.badges || []).map((badge) => <span key={badge} className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-semibold"><BadgeCheck className="h-3 w-3" />{badge}</span>)}
           </div>
 
           <div className="mt-7 grid gap-4 md:grid-cols-3">
             <InfoCard label={t("profile.user_id")} value={profile.id} copy />
             <InfoCard label={t("profile.account")} value={profile.created_date ? new Date(profile.created_date).toLocaleDateString(locale) : t("profile.date_unavailable")} />
-            <InfoCard label={t("profile.status")} value={profile.status || "offline"} />
             <InfoCard label="Discord" value={profile.discord_connected ? t("profile.connected") : t("profile.not_connected")} />
           </div>
 

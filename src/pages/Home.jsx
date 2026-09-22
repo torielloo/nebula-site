@@ -26,6 +26,8 @@ import SeasonShowcase from "@/components/home/SeasonShowcase";
 import BattlePassShowcase from "@/components/home/BattlePassShowcase";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSiteConfig } from "@/lib/SiteConfigContext";
+import OwnerGlobalBannerEditor, { inferBannerKind } from "@/components/OwnerGlobalBannerEditor";
 
 const NebulaLogo3D = lazy(() => import("@/components/three/NebulaLogo3D"));
 const Iphone3D = lazy(() => import("@/components/three/Iphone3D"));
@@ -76,6 +78,11 @@ export default function Home() {
   const { t } = useI18n();
   const ui = useUiStudio();
   const isMobile = useIsMobile();
+  const { config: siteConfig } = useSiteConfig();
+  const homeBannerOverride = siteConfig?.banners?.home_hero;
+  const heroMediaUrl = homeBannerOverride?.url || HERO_VIDEO;
+  const heroMediaKind = inferBannerKind(heroMediaUrl, homeBannerOverride?.kind || (homeBannerOverride ? "" : "video"));
+  const heroIsVideo = heroMediaKind === "video";
   const heroVideoRef = useRef(null);
   const heroVideoVisibleRef = useRef(false);
   const [heroVideoNeedsTap, setHeroVideoNeedsTap] = useState(false);
@@ -139,7 +146,7 @@ export default function Home() {
       window.removeEventListener("pointerdown", unlockFromGesture);
       window.removeEventListener("touchstart", unlockFromGesture);
     };
-  }, [isMobile]);
+  }, [isMobile, heroMediaUrl, heroIsVideo]);
 
   const resumeHeroVideo = () => {
     const video = heroVideoRef.current;
@@ -162,23 +169,40 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <section className="relative left-1/2 -mt-14 w-[100vw] -translate-x-1/2 overflow-hidden">
-        <video
-          ref={heroVideoRef}
-          src={HERO_VIDEO}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          disablePictureInPicture
-          onPlay={() => setHeroVideoNeedsTap(false)}
-          className="absolute inset-0 h-full w-full object-cover"
+        {heroIsVideo ? (
+          <video
+            key={heroMediaUrl}
+            ref={heroVideoRef}
+            src={heroMediaUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            disablePictureInPicture
+            onPlay={() => setHeroVideoNeedsTap(false)}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <img
+            key={heroMediaUrl}
+            src={heroMediaUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        <OwnerGlobalBannerEditor
+          bannerKey="home_hero"
+          label="Trocar banner inicial"
+          className="absolute right-3 top-[8.25rem] z-30 sm:right-6 sm:top-[7.5rem] md:top-[7rem]"
+          compact
         />
-        {isMobile && heroVideoNeedsTap && (
+        {heroIsVideo && isMobile && heroVideoNeedsTap && (
           <button
             type="button"
             onClick={resumeHeroVideo}
-            className="font-fortnite-readable absolute right-4 top-[4.75rem] z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/70 px-3 py-2 text-xs text-white shadow-xl backdrop-blur-md sm:hidden"
+            className="font-fortnite-readable absolute left-3 top-[8.25rem] z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/70 px-3 py-2 text-xs text-white shadow-xl backdrop-blur-md sm:hidden"
             aria-label="Tocar vídeo de fundo"
           >
             <Play className="h-3.5 w-3.5 fill-current" />

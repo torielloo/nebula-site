@@ -53,8 +53,6 @@ export const NEBULA_DEFAULT_TRACKS = [
   },
 ].map((track) => ({
   ...track,
-  lyrics: "",
-  lyrics_source: "none",
   bass_profile: { mode: "realtime", sensitivity: 1, low_hz: 32, high_hz: 210 },
 }));
 

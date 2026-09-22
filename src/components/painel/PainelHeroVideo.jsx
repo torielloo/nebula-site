@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Crown, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useSiteConfig } from "@/lib/SiteConfigContext";
+import OwnerGlobalBannerEditor, { inferBannerKind } from "@/components/OwnerGlobalBannerEditor";
 
 const PAINEL_VIDEO =
   "https://media.base44.com/videos/public/6aa87196309472108abb65fb/4c3f9332d_TRAVISNOVO.mp4";
@@ -24,9 +26,15 @@ const MODES = {
 
 export default function PainelHeroVideo({ mode = "staff", className }) {
   const { t } = useI18n();
+  const { config: siteConfig } = useSiteConfig();
   const videoRef = useRef(null);
   const cfg = MODES[mode] || MODES.staff;
   const Icon = cfg.icon;
+  const bannerKey = mode === "owner" ? "panel_owner_hero" : "panel_staff_hero";
+  const bannerOverride = siteConfig?.banners?.[bannerKey];
+  const mediaUrl = bannerOverride?.url || PAINEL_VIDEO;
+  const mediaKind = inferBannerKind(mediaUrl, bannerOverride?.kind || (bannerOverride ? "" : "video"));
+  const isVideo = mediaKind === "video";
 
   useEffect(() => {
     const video = videoRef.current;
@@ -40,7 +48,7 @@ export default function PainelHeroVideo({ mode = "staff", className }) {
     );
     observer.observe(video);
     return () => observer.disconnect();
-  }, []);
+  }, [mediaUrl, isVideo]);
 
   return (
     <motion.section
@@ -52,16 +60,33 @@ export default function PainelHeroVideo({ mode = "staff", className }) {
         className
       )}
     >
-      <video
-        ref={videoRef}
-        src={PAINEL_VIDEO}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        disablePictureInPicture
-        className="absolute inset-0 h-full w-full object-cover"
+      {isVideo ? (
+        <video
+          key={mediaUrl}
+          ref={videoRef}
+          src={mediaUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          disablePictureInPicture
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <img
+          key={mediaUrl}
+          src={mediaUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      <OwnerGlobalBannerEditor
+        bannerKey={bannerKey}
+        label={mode === "owner" ? "Trocar banner Owner" : "Trocar banner Staff"}
+        className="absolute right-3 top-3 z-30 sm:right-4 sm:top-4"
+        compact
       />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/20" />
       <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-transparent to-transparent" />

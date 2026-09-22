@@ -22,10 +22,19 @@ function nitroExpiry(row: any) {
 async function hasActiveNitro(svc: any, target: any) {
   const userId = target?.id;
   if (!userId) return false;
-  const rows = await svc.entities.NitroRequest.filter({ user_id: userId }, '-created_date', 100).catch(() => []);
+  const [filteredResult, listedResult] = await Promise.allSettled([
+    svc.entities.NitroRequest.filter({ user_id: userId }, '-created_date', 150),
+    svc.entities.NitroRequest.list('-created_date', 300),
+  ]);
+  const filteredRows = filteredResult.status === 'fulfilled' ? filteredResult.value : [];
+  const listedRows = listedResult.status === 'fulfilled' ? listedResult.value : [];
+  const rows = Array.from(new Map([
+    ...(filteredRows || []),
+    ...(listedRows || []).filter((row: any) => row?.user_id === userId),
+  ].map((row: any) => [row.id, row])).values());
   const now = Date.now();
   const resetFloor = new Date(target?.profile?.nitro_reset_at || 0).getTime();
-  return (rows || []).some((row: any) => {
+  return rows.some((row: any) => {
     if (row.status !== 'approved' || nitroExpiry(row) <= now) return false;
     const approvedAnchor = new Date(row?.approved_at || row?.updated_date || row?.created_date || 0).getTime();
     return !(Number.isFinite(resetFloor) && resetFloor > 0 && Number.isFinite(approvedAnchor) && approvedAnchor <= resetFloor);
@@ -42,7 +51,14 @@ function publicUser(u: any) {
     banner_url: p.banner_url || p.discord_banner_url || '',
     bio: p.bio || '',
     status: p.status || 'offline',
+    custom_status: text(p.nitro_status_text || p.custom_status, 40),
+    accent: text(p.accent, 20),
+    accent_2: text(p.accent_2, 20),
+    accent_source: text(p.accent_source, 40),
+    frame: text(p.frame, 40),
+    custom_frame_url: text(p.custom_frame_url, 2048),
     badges: Array.isArray(p.badges) ? p.badges.slice(0, 12) : [],
+    nitro_badges: Array.isArray(p.nitro_badges) ? p.nitro_badges.slice(0, 4) : [],
     role: u.role || 'user',
     created_date: u.created_date,
     discord_connected: !!(p.discord_id || p.discord_connected || p.discord_username || p.discord_handle),
@@ -72,26 +88,34 @@ export default async function(req: Request) {
       const target = rows?.[0];
       if (!target) return Response.json({ error: 'Perfil não encontrado' }, { status: 404 });
       const profile: any = publicUser(target);
-      if (await hasActiveNitro(svc, target)) {
-        profile.nitro_active = true;
+      const targetProfile = target.profile || {};
+      const nitroActive = await hasActiveNitro(svc, target);
+      profile.nitro_active = nitroActive;
+      profile.custom_status = text(targetProfile.nitro_status_text || targetProfile.custom_status, 40);
+      profile.nitro_status_text = text(targetProfile.nitro_status_text || targetProfile.custom_status, 40);
+      profile.nitro_badges = Array.isArray(targetProfile.nitro_badges) ? targetProfile.nitro_badges.slice(0, 8) : [];
+      profile.frame = text(targetProfile.frame, 40);
+      profile.custom_frame_url = text(targetProfile.custom_frame_url, 2048);
+      profile.custom_tag = text(targetProfile.custom_tag, 16);
+      profile.name_gradient_a = text(targetProfile.name_gradient_a, 20);
+      profile.name_gradient_b = text(targetProfile.name_gradient_b, 20);
+      profile.nitro_pronouns = text(targetProfile.nitro_pronouns, 40);
+      profile.nitro_about = text(targetProfile.nitro_about || targetProfile.bio, 300);
+      profile.accent = text(targetProfile.accent, 20);
+      profile.accent_2 = text(targetProfile.accent_2, 20);
+      profile.accent_source = text(targetProfile.accent_source, 40);
+      if (nitroActive) {
         profile.frame = text(target.profile?.frame, 40);
         profile.custom_frame_url = text(target.profile?.custom_frame_url, 2048);
         profile.custom_tag = text(target.profile?.custom_tag, 16);
         profile.name_gradient_a = text(target.profile?.name_gradient_a, 20);
         profile.name_gradient_b = text(target.profile?.name_gradient_b, 20);
         profile.nitro_pronouns = text(target.profile?.nitro_pronouns, 40);
-        profile.nitro_status_text = text(target.profile?.nitro_status_text, 80);
+        profile.nitro_status_text = text(target.profile?.nitro_status_text || target.profile?.custom_status, 40);
         profile.nitro_about = text(target.profile?.nitro_about, 300);
-      } else {
-        profile.nitro_active = false;
-        profile.frame = '';
-        profile.custom_frame_url = '';
-        profile.custom_tag = '';
-        profile.name_gradient_a = '';
-        profile.name_gradient_b = '';
-        profile.nitro_pronouns = '';
-        profile.nitro_status_text = '';
-        profile.nitro_about = '';
+        profile.accent = text(target.profile?.accent, 20);
+        profile.accent_2 = text(target.profile?.accent_2, 20);
+        profile.accent_source = text(target.profile?.accent_source, 40);
       }
       const canAdminView = await hasPermission(base44, user, 'users.profile.admin_view');
       if (canAdminView) {
@@ -125,7 +149,10 @@ export default async function(req: Request) {
           active: punishments.filter((p: any) => p.active !== false && (!p.expires_at || new Date(p.expires_at).getTime() > Date.now())).length,
         };
       }
-      return Response.json({ profile, viewer: { staff: requireStaff(user), role: user.role } });
+      return Response.json(
+        { profile, viewer: { staff: requireStaff(user), role: user.role } },
+        { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache" } }
+      );
     }
 
     if (body.action === 'ticket_directory') {

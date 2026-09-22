@@ -21,6 +21,64 @@ export default class CallRoom extends Actor {
     return this.isTicketRoom() ? this.instanceId.slice(4) : '';
   }
 
+  isDmRoom() {
+    return typeof this.instanceId === 'string' && this.instanceId.startsWith('DM-');
+  }
+
+  conversationId() {
+    return this.isDmRoom() ? this.instanceId.slice(3) : '';
+  }
+
+  async getConversationForUser(conversationId, userId) {
+    if (!conversationId || !userId) return null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const direct = await this.client.asServiceRole.entities.Conversation.get(conversationId).catch(() => null);
+      if (direct && (direct.participants || []).includes(userId)) return direct;
+
+      const rows = await this.client.asServiceRole.entities.Conversation.filter({ id: conversationId }, '-updated_date', 1).catch(() => []);
+      const filtered = rows?.[0] || null;
+      if (filtered && (filtered.participants || []).includes(userId)) return filtered;
+
+      if (attempt === 1) {
+        const recent = await this.client.asServiceRole.entities.Conversation.list('-updated_date', 250).catch(() => []);
+        const listed = (recent || []).find((row) => row?.id === conversationId && (row.participants || []).includes(userId));
+        if (listed) return listed;
+      }
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+    }
+    return null;
+  }
+
+  async recentInviteAllows(conversationId, userId) {
+    const rows = await this.client.asServiceRole.entities.PrivateCallInvite
+      .filter({ conversation_id: conversationId }, '-updated_date', 20)
+      .catch(() => []);
+    const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+    return (rows || []).some((invite) => {
+      const at = new Date(invite?.updated_date || invite?.created_date || 0).getTime();
+      const participant = invite?.caller_id === userId || invite?.callee_id === userId;
+      const activeStatus = invite?.status === 'ringing' || invite?.status === 'accepted';
+      return participant && activeStatus && at >= cutoff;
+    });
+  }
+
+  async authorizeDmConnection(conn) {
+    if (!this.isDmRoom()) return { allowed: true, role: 'public' };
+    const identity = conn.identity;
+    if (identity?.type !== 'authenticated' || typeof identity.userId !== 'string') return null;
+    const conversationId = this.conversationId();
+    if (!conversationId) return null;
+    const conversation = await this.getConversationForUser(conversationId, identity.userId);
+    if (conversation) return { allowed: true, userId: identity.userId, role: 'dm', conversation };
+
+    // Fallback curto para inconsistência transitória de leitura da entidade.
+    // A função de convite já validou a DM; só aceita caller/callee de convite
+    // recente e ativo da MESMA conversa, evitando liberar sala por texto cliente.
+    const allowedByInvite = await this.recentInviteAllows(conversationId, identity.userId);
+    if (!allowedByInvite) return null;
+    return { allowed: true, userId: identity.userId, role: 'dm', conversation: null };
+  }
+
   async authorizeTicketConnection(conn) {
     if (!this.isTicketRoom()) return { allowed: true, role: 'public' };
     const identity = conn.identity;
@@ -90,6 +148,13 @@ export default class CallRoom extends Actor {
         return;
       }
       this.authorized.set(conn.id, auth);
+    } else if (this.isDmRoom()) {
+      const auth = await this.authorizeDmConnection(conn).catch(() => null);
+      if (!auth) {
+        conn.reject(4003, 'private call access denied');
+        return;
+      }
+      this.authorized.set(conn.id, auth);
     }
 
     // Observadores (id "obs:"): recebem o roster ao vivo sem ocupar assento —
@@ -129,7 +194,16 @@ export default class CallRoom extends Actor {
           conn.reject(4003, 'ticket call mismatch');
           return;
         }
+      } else if (this.isDmRoom()) {
+        auth = this.authorized.get(conn.id) || await this.authorizeDmConnection(conn).catch(() => null);
+        if (!auth) {
+          conn.reject(4003, 'private call access denied');
+          return;
+        }
+        this.authorized.set(conn.id, auth);
+      }
 
+      if (auth?.userId && (this.isTicketRoom() || this.isDmRoom())) {
         const duplicateIds = [...this.users.entries()]
           .filter(([id, u]) => id !== conn.id && u?.userId === auth.userId)
           .map(([id]) => id);
@@ -168,7 +242,7 @@ export default class CallRoom extends Actor {
       const identityUserId = conn.identity?.type === 'authenticated' && typeof conn.identity.userId === 'string'
         ? conn.identity.userId
         : null;
-      me.userId = (this.isTicketRoom() && auth?.userId) || identityUserId || null;
+      me.userId = auth?.userId || identityUserId || null;
       me.ticketRole = this.isTicketRoom() ? String(auth?.role || '') : '';
       await this.save();
       conn.send({ type: 'you', seat: me.seat });

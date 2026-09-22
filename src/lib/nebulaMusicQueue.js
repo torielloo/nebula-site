@@ -12,8 +12,6 @@ export function toSafeTrack(track) {
     mime_type: track.mime_type || "audio/mpeg",
     duration: Number(track.duration) || 0,
     is_official: !!track.is_official,
-    lyrics: track.lyrics || "",
-    lyrics_source: track.lyrics_source || "none",
     bass_profile: track.bass_profile || { mode: "realtime", sensitivity: 1, low_hz: 32, high_hz: 210 },
   };
 }

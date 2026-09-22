@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import ProfileAvatar from "@/components/ProfileAvatar";
+import UserQuickCard from "@/components/users/UserQuickCard";
 import MessageAttachments from "@/components/tickets/MessageAttachments";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -279,14 +279,15 @@ export default function OwnerDmAudit() {
                     <p className="truncate text-sm font-bold">{partnerLabel(selected)}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {participants.map((person) => (
-                        <Link
-                          key={person.id}
-                          to={`/user/${person.id}`}
-                          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] py-1 pl-1 pr-3 text-[10px] font-semibold transition hover:bg-white/[0.07]"
-                        >
-                          <ProfileAvatar name={person.name || "Usuário"} avatar={person.avatar} size="sm" />
-                          <span className="max-w-[160px] truncate leading-none">{person.name || "Usuário"}</span>
-                        </Link>
+                        <UserQuickCard key={person.id} userId={person.id} align="start">
+                          <button
+                            type="button"
+                            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] py-1 pl-1 pr-3 text-[10px] font-semibold transition hover:bg-white/[0.07]"
+                          >
+                            <ProfileAvatar name={person.name || "Usuário"} avatar={person.avatar} size="sm" />
+                            <span className="max-w-[160px] truncate leading-none">{person.name || "Usuário"}</span>
+                          </button>
+                        </UserQuickCard>
                       ))}
                     </div>
                   </div>
@@ -315,12 +316,16 @@ export default function OwnerDmAudit() {
                   <div className="space-y-2.5">
                     {grouped.map((group, groupIndex) => (
                       <div key={`${group.sender_id}:${groupIndex}`} className="grid grid-cols-[32px,minmax(0,1fr)] items-start gap-2.5">
-                        <Link to={`/user/${group.sender_id}`} className="mt-0.5 shrink-0">
-                          <ProfileAvatar name={group.sender_name} avatar={group.sender_avatar} size="sm" />
-                        </Link>
+                        <UserQuickCard userId={group.sender_id} align="start">
+                          <button type="button" className="mt-0.5 shrink-0">
+                            <ProfileAvatar name={group.sender_name} avatar={group.sender_avatar} size="sm" />
+                          </button>
+                        </UserQuickCard>
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center gap-2">
-                            <Link to={`/user/${group.sender_id}`} className="truncate text-[11px] font-bold hover:underline">{group.sender_name}</Link>
+                            <UserQuickCard userId={group.sender_id} align="start">
+                              <button type="button" className="truncate text-left text-[11px] font-bold hover:underline">{group.sender_name}</button>
+                            </UserQuickCard>
                             <span className="text-[9px] text-muted-foreground">
                               {group.items[0]?.created_date ? formatLocalTime(group.items[0].created_date) : ""}
                             </span>

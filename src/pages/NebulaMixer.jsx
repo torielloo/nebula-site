@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { STORAGE_TRACK, selectNebulaTrack } from "@/lib/nebulaMusicQueue";
 import {
   AudioLines,
-  Bot,
   Check,
   Disc3,
   GripVertical,
@@ -28,7 +27,6 @@ import {
   Shuffle,
   Upload,
   SkipForward,
-  Sparkles,
   Trash2,
   Waves,
   X,
@@ -37,7 +35,6 @@ import {
 const PANELS = [
   { id: "library", label: "Biblioteca", icon: Disc3 },
   { id: "playlists", label: "Playlists", icon: ListMusic },
-  { id: "lyrics", label: "Letras + IA", icon: Sparkles },
   { id: "beat", label: "Beat / Graves", icon: AudioLines },
 ];
 
@@ -101,8 +98,6 @@ export default function NebulaMixer() {
   const [editingPlaylistId, setEditingPlaylistId] = useState("");
   const [playlistDraft, setPlaylistDraft] = useState({ name: "", description: "", cover_url: "" });
   const [dragState, setDragState] = useState({ playlistId: "", trackId: "" });
-  const [lyrics, setLyrics] = useState("");
-  const [idea, setIdea] = useState("");
   const [bass, setBass] = useState({ mode: "realtime", sensitivity: 1, low_hz: 32, high_hz: 210 });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -250,9 +245,8 @@ export default function NebulaMixer() {
 
   useEffect(() => {
     if (!selected) return;
-    setLyrics(selected.lyrics || "");
     setBass(selected.bass_profile || { mode: "realtime", sensitivity: 1, low_hz: 32, high_hz: 210 });
-  }, [selected?.id, selected?.lyrics, selected?.bass_profile]);
+  }, [selected?.id, selected?.bass_profile]);
 
   const uploadOwnTrack = async () => {
     if (!active || !uploadFile || uploadingTrack) return;
@@ -575,39 +569,6 @@ export default function NebulaMixer() {
     }
   };
 
-  const saveLyrics = () => {
-    if (!selected?.uploaded_by_me) return;
-    run(
-      "lyrics:save",
-      () =>
-        invokeMusicLibrary({
-          action: "save_lyrics",
-          track_id: selected.id,
-          lyrics,
-          lyrics_source: "manual",
-        }),
-      "Letra salva."
-    );
-  };
-
-  const generateLyrics = () => {
-    if (!selected?.uploaded_by_me) return;
-    run(
-      "lyrics:ai",
-      async () => {
-        const generated = await invokeMusicLibrary({
-          action: "generate_lyrics",
-          track_id: selected.id,
-          idea,
-        });
-        const finalLyrics = String(generated.data?.lyrics || "").trim();
-        if (!finalLyrics) throw new Error("A IA não conseguiu concluir a letra.");
-        setLyrics(finalLyrics);
-      },
-      "Letra original criada pela IA e salva."
-    );
-  };
-
   const saveBass = () => {
     if (!selected?.uploaded_by_me) return;
     run(
@@ -641,7 +602,7 @@ export default function NebulaMixer() {
         className="mx-auto max-w-5xl"
         label="NÉBULA MUSIC"
         title="Nébula Mixer"
-        subtitle="Playlists, letras e controle de graves para músicas do Nébula."
+        subtitle="Playlists e controle de graves para músicas do Nébula."
       >
         <div className="grid min-h-[50vh] place-items-center rounded-3xl border border-white/10 bg-[#070707] p-8 text-center">
           <div>
@@ -664,7 +625,7 @@ export default function NebulaMixer() {
       className="mx-auto max-w-7xl"
       label="NÉBULA MUSIC LAB"
       title="Nébula Mixer"
-      subtitle="Uma página dedicada para biblioteca, playlists contínuas, letras com IA e sincronização de graves."
+      subtitle="Uma página dedicada para biblioteca, playlists contínuas e controle de graves."
     >
       <div className="space-y-5">
         {(error || notice) && (
@@ -1223,64 +1184,6 @@ export default function NebulaMixer() {
                 )}
               </div>
             </div>
-          </section>
-        )}
-
-        {activePanel === "lyrics" && (
-          <section className="rounded-2xl border border-white/10 bg-[#070707] p-4 md:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <div>
-                  <h2 className="font-extrabold">Letras + IA</h2>
-                  <p className="text-xs text-muted-foreground">{selected?.title || "Selecione uma música"}</p>
-                </div>
-              </div>
-              {selected?.lyrics_source === "ai_original" && (
-                <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-bold text-primary">IA ORIGINAL</span>
-              )}
-            </div>
-
-            {!selected ? (
-              <div className="mt-4 rounded-xl border border-dashed border-white/10 p-8 text-center text-xs text-muted-foreground">
-                Selecione uma música na Biblioteca.
-              </div>
-            ) : !selected.uploaded_by_me ? (
-              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-xs text-muted-foreground">
-                A letra só pode ser editada pelo usuário que adicionou esta música. A faixa oficial continua protegida.
-              </div>
-            ) : (
-              <>
-                <textarea
-                  value={lyrics}
-                  onChange={(event) => setLyrics(event.target.value)}
-                  placeholder="Cole sua letra aqui ou use a IA para criar uma letra original..."
-                  className="mt-4 min-h-72 w-full resize-y rounded-xl border border-white/10 bg-black/30 p-3 text-sm outline-none focus:border-primary/40"
-                />
-                <div className="mt-3 grid gap-2 lg:grid-cols-[1fr_auto_auto]">
-                  <Input
-                    value={idea}
-                    onChange={(event) => setIdea(event.target.value)}
-                    placeholder="Ideia para a letra: tema, clima, história..."
-                  />
-                  <Button variant="outline" disabled={!!busy} onClick={generateLyrics}>
-                    {busy === "lyrics:ai" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Bot className="mr-2 h-4 w-4" />
-                    )}
-                    Criar com IA
-                  </Button>
-                  <Button disabled={!!busy} onClick={saveLyrics}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar
-                  </Button>
-                </div>
-                <p className="mt-2 text-[10px] text-muted-foreground">
-                  A IA cria letras novas e originais; ela não copia letras de músicas existentes.
-                </p>
-              </>
-            )}
           </section>
         )}
 

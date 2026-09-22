@@ -40,7 +40,7 @@ const orderOf = (key, cfg) => {
 };
 
 export default function UiStudioProvider({ children }) {
-  const { user, checkUserAuth } = useAuth();
+  const { user, checkUserAuth, mergeUserProfile } = useAuth();
   const [nitroActive, setNitroActive] = useState(false);
   const nitroActiveRef = useRef(false);
   const [nitroStatus, setNitroStatus] = useState("checking");
@@ -225,10 +225,13 @@ export default function UiStudioProvider({ children }) {
     let lastError = null;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
-        return await base44.functions.invoke("saveNitroProfileStyle", {
+        const response = await base44.functions.invoke("saveNitroProfileStyle", {
           ...(changes && Object.keys(changes).length ? { changes } : {}),
           ...(uiConfig ? { ui_config: uiConfig } : {}),
         });
+        if (response?.data?.profile) mergeUserProfile(response.data.profile);
+        else if (changes && Object.keys(changes).length) mergeUserProfile(changes);
+        return response;
       } catch (error) {
         lastError = error;
         const status = Number(error?.status || error?.response?.status || 0);
@@ -239,7 +242,7 @@ export default function UiStudioProvider({ children }) {
       }
     }
     throw lastError || new Error("Falha ao salvar personalização Nitro");
-  }, [syncNitro]);
+  }, [syncNitro, mergeUserProfile]);
 
   const retrySave = useCallback(() => {
     if (!canEdit || saveState === "saving") return;
@@ -310,6 +313,7 @@ export default function UiStudioProvider({ children }) {
         frame: "",
         custom_tag: "",
         theme: "nebula",
+        cursor_effect: "none",
         sounds: { notify: true, call: true },
       }, defaults);
       const savedId = res?.data?.ui_setting_id || "";
@@ -355,7 +359,6 @@ export default function UiStudioProvider({ children }) {
               accent_source: isGamer ? "preset:gamer" : (presetId === "custom" ? "custom" : `preset:${presetId}`),
             });
             applyConfig((c) => ({ ...c, themePreset: presetId }));
-            await checkUserAuth().catch(() => {});
             return true;
           } catch {
             setSaveState("error");
@@ -364,7 +367,7 @@ export default function UiStudioProvider({ children }) {
         });
       return presetQueueRef.current;
     },
-    [canEdit, checkUserAuth, applyConfig, saveProfileStyle]
+    [canEdit, applyConfig, saveProfileStyle]
   );
 
   const playClick = useCallback(() => {

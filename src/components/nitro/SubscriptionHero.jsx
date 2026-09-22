@@ -2,21 +2,50 @@ import React from "react";
 import { Sparkles, Gem, Check, ArrowRight, ShieldCheck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { NEBULA_HEADER_ART_URL, NEBULA_LOGO_URL } from "@/lib/brandAssets";
+import { useSiteConfig } from "@/lib/SiteConfigContext";
+import OwnerGlobalBannerEditor, { inferBannerKind } from "@/components/OwnerGlobalBannerEditor";
 
 const FEATURE_KEYS = ["nitro.f1", "nitro.f2", "nitro.f3"];
 
 export default function SubscriptionHero({ active, validUntil = null }) {
   const { t } = useI18n();
+  const { config: siteConfig } = useSiteConfig();
+  const bannerOverride = siteConfig?.banners?.nitro_hero;
+  const bannerUrl = bannerOverride?.url || NEBULA_HEADER_ART_URL;
+  const bannerKind = inferBannerKind(bannerUrl, bannerOverride?.kind || "image");
+
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <section className="grid overflow-hidden rounded-3xl border border-border/50 bg-card/45 shadow-[0_30px_100px_-60px_rgba(0,0,0,.95)] lg:grid-cols-[1.35fr_.8fr]">
+    <section className="relative grid overflow-hidden rounded-3xl border border-white/[0.08] bg-[#07090c]/92 shadow-[0_30px_100px_-60px_rgba(0,0,0,.95)] lg:grid-cols-[1.35fr_.8fr]">
+      {bannerKind === "video" ? (
+        <video
+          key={bannerUrl}
+          src={bannerUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.16]"
+        />
+      ) : (
+        <img key={bannerUrl} src={bannerUrl} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.13]" />
+      )}
+      <OwnerGlobalBannerEditor
+        bannerKey="nitro_hero"
+        label="Trocar banner Nitro"
+        className="absolute right-3 top-3 z-30"
+        compact
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#07090c]/78 via-[#07090c]/88 to-[#07090c]/96" />
       <div className="relative overflow-hidden p-6 md:p-9">
-        <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-[-140px] right-[-80px] h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-white/[0.018] blur-3xl" />
+        <img src={NEBULA_LOGO_URL} alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-10 -right-8 h-48 w-72 object-contain opacity-[0.055] sm:h-64 sm:w-96" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.08] px-3 py-1.5 text-[10px] font-black tracking-[0.18em] text-primary">
@@ -53,7 +82,7 @@ export default function SubscriptionHero({ active, validUntil = null }) {
         </div>
       </div>
 
-      <div className="border-t border-border/40 bg-gradient-to-b from-primary/[0.10] via-primary/[0.035] to-transparent p-6 lg:border-l lg:border-t-0 md:p-7">
+      <div className="relative border-t border-white/[0.07] bg-gradient-to-b from-[#e31b23]/[0.10] via-white/[0.025] to-transparent p-6 lg:border-l lg:border-t-0 md:p-7">
         <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-primary">
           <Gem className="h-3.5 w-3.5" /> {t("nitro.sub_kicker")}
         </p>

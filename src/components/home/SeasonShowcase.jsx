@@ -13,16 +13,39 @@ const SLIDES = [
     titleKey: "season.title_nexus",
     descKey: "season.desc_nexus",
     position: "center 54%",
-    zoom: 1.015,
+    zoom: 1.01,
+  },
+  {
+    image: "/season-showcase/nexus-war.webp",
+    titleKey: "season.title_nexus",
+    descKey: "season.desc_nexus",
+    position: "center 58%",
+    zoom: 1,
   },
   {
     image: "/season-showcase/silver-surfer-new.jpg",
     titleKey: "season.title_surf",
     descKey: "season.desc_surf",
-    position: "center 12%",
+    position: "center 18%",
+    zoom: 1,
+  },
+  {
+    image: "/season-showcase/silver-surfer.webp",
+    titleKey: "season.title_surf",
+    descKey: "season.desc_surf",
+    position: "center 48%",
     zoom: 1,
   },
 ];
+
+if (typeof window !== "undefined") {
+  SLIDES.forEach(({ image: src }) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = src;
+    image.decode?.().catch(() => {});
+  });
+}
 
 export default function SeasonShowcase() {
   const { t } = useI18n();

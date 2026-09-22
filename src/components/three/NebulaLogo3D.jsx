@@ -2,9 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
-
-const LOGO_URL =
-  "https://media.base44.com/images/public/6aa87196309472108abb65fb/8eaf849a6_NEBULAV2.png";
+import { NEBULA_LOGO_URL } from "@/lib/brandAssets";
 
 const PARTICLES = [
   [8, 18, 1.4, 0.22], [88, 22, 1, 0.16], [18, 78, 1, 0.18], [82, 72, 1.4, 0.2],
@@ -16,10 +14,10 @@ const PARTICLES = [
 export default function NebulaLogo3D({ className = "h-40 w-40", animated = false }) {
   const logo = (
     <Image
-      src={LOGO_URL}
+      src={NEBULA_LOGO_URL}
       alt="Logo Nébula OS"
       fittingType="fit"
-      className="h-full w-full [filter:drop-shadow(0_5px_10px_rgba(0,0,0,0.5))_drop-shadow(0_0_5px_rgba(239,35,60,0.1))]"
+      className="h-full w-full [filter:drop-shadow(0_5px_10px_rgba(0,0,0,0.42))]"
     />
   );
 

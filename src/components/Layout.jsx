@@ -53,6 +53,7 @@ import { SiteConfigProvider, useSiteConfig } from "@/lib/SiteConfigContext";
 import { playUiClickSound } from "@/lib/uiClickSound";
 import { setNitroCallSoundEnabled } from "@/lib/nitroSoundPreferences";
 import NitroCursorEffect from "@/components/nitro/NitroCursorEffect";
+import { NEBULA_LOGO_URL, NEBULA_WALLPAPER_URL } from "@/lib/brandAssets";
 
 function DiscordMark({ className = "h-4 w-4" }) {
   return (
@@ -217,10 +218,14 @@ function LayoutInner() {
       window.clearInterval(poll);
     };
   }, [user?.id]);
-  const rawAccentValue = (nitroVisualActive ? profile.accent : null) || siteConfig.theme?.accent || null;
-  const gamerRgbActive = nitroVisualActive && ui.config.themePreset === "gamer";
+  // Cores do Profile Lab (accent_source=profile) ficam somente no cartão de perfil.
+  // Theme Builder, Personalização Nitro e UI Studio tematizam a interface inteira.
+  const accentSource = String(profile.accent_source || "");
+  const profileAccentThemesSite = nitroVisualActive && /^(preset:|nitro-builder:|nitro-studio$|custom$)/i.test(accentSource);
+  const rawAccentValue = (profileAccentThemesSite ? profile.accent : null) || siteConfig.theme?.accent || null;
+  const uiPresetOwnsTheme = /^preset:/i.test(accentSource);
+  const gamerRgbActive = nitroVisualActive && uiPresetOwnsTheme && ui.config.themePreset === "gamer";
   const legacyRedDefault =
-    !(nitroVisualActive && profile.accent_source) &&
     !ui.config.themePreset &&
     typeof rawAccentValue === "string" &&
     /^#?ff263b$/i.test(rawAccentValue.trim());
@@ -233,15 +238,16 @@ function LayoutInner() {
   const primaryForeground = effectiveAccent
     ? (lightnessFromChannels(effectiveAccent) >= 58 ? "0 0% 4%" : "0 0% 98%")
     : null;
-  const presetSecondary =
-    ui.config.themePreset === "cyber-red"
+  const presetSecondary = uiPresetOwnsTheme
+    ? (ui.config.themePreset === "cyber-red"
       ? (accentChannels || "352 100% 57%")
       : ui.config.themePreset === "minimal-ios"
         ? (accentChannels || "214 29% 65%")
-        : null;
+        : null)
+    : null;
   const secondaryChannels =
     presetSecondary
-    || accentToChannels(nitroVisualActive ? profile.accent_2 : null)
+    || accentToChannels(profileAccentThemesSite ? profile.accent_2 : null)
     || accentChannels
     || "0 0% 72%";
   const accentStyle = (effectiveAccent || secondaryChannels)
@@ -298,7 +304,17 @@ function LayoutInner() {
             <div className="fixed inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${siteBg})` }} />
             <div className="fixed inset-0 -z-10 bg-background/85" />
           </>
-        ) : null;
+        ) : (
+          <>
+            <img
+              src={NEBULA_WALLPAPER_URL}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover opacity-[0.075]"
+            />
+            <div className="pointer-events-none fixed inset-0 -z-10 bg-background/94" />
+          </>
+        );
       })()}
 
       <motion.header
@@ -309,9 +325,9 @@ function LayoutInner() {
       >
         <div className="relative mx-auto flex h-12 w-full max-w-[1600px] items-center gap-1.5 px-0 sm:h-14 sm:gap-3 sm:px-2 md:px-6">
           <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Nébula OS — início">
-            <div className="nebula-glow-sm h-10 w-10 shrink-0 overflow-hidden rounded-full sm:h-12 sm:w-12">
+            <div className="h-9 w-14 shrink-0 overflow-visible sm:h-10 sm:w-16">
               <Image
-                src={siteConfig.brand?.logo_url || "https://media.base44.com/images/public/6aa87196309472108abb65fb/8eaf849a6_NEBULAV2.png"}
+                src={siteConfig.brand?.logo_url || NEBULA_LOGO_URL}
                 alt={siteConfig.brand?.name || "Nébula OS"}
                 fittingType="fit"
                 className="h-full w-full object-contain"
@@ -443,8 +459,11 @@ function LayoutInner() {
       </main>
 
       <footer className="border-t border-white/[0.06] px-4 py-5 text-[11px] font-medium text-muted-foreground md:px-6">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-2 text-center sm:flex-row sm:text-left">
-          <span>Todos os direitos reservados para Nebulaticos PinguTn e 24kMurilo</span>
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
+          <div className="flex items-center gap-3">
+            <img src={NEBULA_LOGO_URL} alt="" aria-hidden="true" className="h-6 w-10 object-contain opacity-70" />
+            <span>Todos os direitos reservados para <span className="text-red-500">PinguTn</span> <span className="text-red-500">Nebulaticos</span> e <span className="text-red-500">24kMurilo</span></span>
+          </div>
           <Link to="/termos-de-servico" className="rounded-full px-3 py-1.5 transition-colors hover:bg-white/[0.05] hover:text-foreground">
             {t("layout.terms")}
           </Link>

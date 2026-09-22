@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Loader2, ArrowDownToLine, Upload, Film, Globe2 } from "lucide-react";
+import { Plus, Loader2, ArrowDownToLine, Film } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,8 @@ import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { isAdminLevel } from "@/lib/roles";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/lib/SiteConfigContext";
+import { NEBULA_HEADER_ART_URL } from "@/lib/brandAssets";
+import OwnerGlobalBannerEditor, { inferBannerKind } from "@/components/OwnerGlobalBannerEditor";
 
 const EMPTY_FORM = {
   title: "",
@@ -46,14 +48,12 @@ const EMPTY_FORM = {
 export default function Downloads() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const { config: siteConfig, reload: reloadSiteConfig } = useSiteConfig();
+  const { config: siteConfig } = useSiteConfig();
   const isAdmin = isAdminLevel(user);
   const [items, setItems] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [bannerUploading, setBannerUploading] = useState(false);
-  const [bannerError, setBannerError] = useState("");
 
   const load = async () => {
     const list = await base44.entities.Download.list("-created_date", 50);
@@ -112,69 +112,38 @@ export default function Downloads() {
     await load();
   };
 
-  const bannerUrl = siteConfig?.downloads?.banner_url || "";
-
-  const uploadBanner = async (event) => {
-    const input = event.target;
-    const file = input.files?.[0];
-    input.value = "";
-    if (!file || bannerUploading) return;
-    setBannerError("");
-
-    const confirmed = window.confirm("Este banner é global e será alterado para TODOS os usuários do site. Deseja continuar?");
-    if (!confirmed) return;
-
-    if (!["video/mp4", "video/webm"].includes(file.type)) {
-      setBannerError("Use um vídeo MP4 ou WebM.");
-      return;
-    }
-    if (file.size > 200 * 1024 * 1024) {
-      setBannerError("O vídeo deve ter no máximo 200 MB.");
-      return;
-    }
-
-    setBannerUploading(true);
-    try {
-      const uploaded = await base44.integrations.Core.UploadPublicFile({ file });
-      const rows = await base44.entities.SiteConfig.filter({ key: "global" }, "-updated_date", 1);
-      const current = rows?.[0];
-      const nextData = {
-        ...(current?.data || {}),
-        downloads: {
-          ...(current?.data?.downloads || {}),
-          banner_url: uploaded.file_url,
-        },
-      };
-      if (current?.id) await base44.entities.SiteConfig.update(current.id, { data: nextData });
-      else await base44.entities.SiteConfig.create({ key: "global", data: nextData });
-      await reloadSiteConfig();
-    } catch (error) {
-      setBannerError(error?.message || "Não foi possível enviar o vídeo do banner.");
-    } finally {
-      setBannerUploading(false);
-    }
-  };
+  const bannerOverride = siteConfig?.banners?.downloads_hero;
+  const legacyBannerUrl = siteConfig?.downloads?.banner_url || "";
+  const bannerUrl = bannerOverride?.url || legacyBannerUrl;
+  const bannerKind = inferBannerKind(
+    bannerUrl,
+    bannerOverride?.kind || (legacyBannerUrl && !bannerOverride ? "video" : "")
+  );
 
   return (
     <PageShell
       hero={
         <section className="relative isolate min-h-[220px] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#050505] shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] sm:min-h-[260px] md:min-h-[320px]">
           {bannerUrl ? (
-            <video
-              key={bannerUrl}
-              src={bannerUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
+            bannerKind === "video" ? (
+              <video
+                key={bannerUrl}
+                src={bannerUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            ) : (
+              <img key={bannerUrl} src={bannerUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover object-center" />
+            )
           ) : (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.10),transparent_34%),linear-gradient(135deg,#111_0%,#050505_56%,#000_100%)]" />
+            <img src={NEBULA_HEADER_ART_URL} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
           )}
 
-          <div className="pointer-events-none absolute inset-0 bg-black/38" />
+          <div className="pointer-events-none absolute inset-0 bg-black/42" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/70 to-transparent" />
 
@@ -186,31 +155,10 @@ export default function Downloads() {
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
-                {user?.role === "owner" && (
-                  <label
-                    title="Banner global: ao trocar, todos os usuários do site verão o novo vídeo."
-                    className="group inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3.5 text-xs font-bold text-white shadow-lg backdrop-blur-xl transition hover:border-amber-300/25 hover:bg-black/75"
-                  >
-                    {bannerUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    <span>{bannerUploading ? "Enviando..." : bannerUrl ? "Trocar banner" : "Enviar banner"}</span>
-                    {!bannerUploading && (
-                      <>
-                        <span className="h-4 w-px bg-white/15" />
-                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/15 bg-amber-300/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-amber-100/90">
-                          <Globe2 className="h-3 w-3" />
-                          Global
-                        </span>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="video/mp4,video/webm"
-                      className="hidden"
-                      disabled={bannerUploading}
-                      onChange={uploadBanner}
-                    />
-                  </label>
-                )}
+                <OwnerGlobalBannerEditor
+                  bannerKey="downloads_hero"
+                  label="Trocar banner"
+                />
                 <NebulaLogo3D className="h-10 w-10 shrink-0" />
                 {isAdmin && (
                   <Button onClick={openNew} className="h-10 rounded-full bg-white px-5 text-black hover:bg-white/90">
@@ -231,11 +179,7 @@ export default function Downloads() {
               <p className="mt-3 max-w-2xl text-sm font-medium text-white/72 drop-shadow-md sm:text-base">
                 Launcher, build 14.40, mobile e tutorial oficial.
               </p>
-              {bannerError && (
-                <p className="mt-3 w-fit rounded-xl border border-red-400/20 bg-red-950/55 px-3 py-2 text-xs font-semibold text-red-100 backdrop-blur-xl">
-                  {bannerError}
-                </p>
-              )}
+
             </div>
           </div>
         </section>
